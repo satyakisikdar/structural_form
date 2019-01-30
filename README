@@ -1,5 +1,5 @@
-# Mapping between Python and MATLAB names
-## Filenames / Functions
+## Mapping between Python and MATLAB names
+### Filenames / Functions
 
 | MATLAB            | Python            | Description               |
 |-------------------|-------------------|---------------------------|
@@ -8,7 +8,7 @@
 |`relgraphinit.m`   |`rel_graph_init.py`| Initialize Relation graph |
 |`runmodel.m` |`run_model.m` |  
 
-## Variables
+### Variables
 
 | Filename      	| MATLAB         	| Python                	| Description                                          	|
 |---------------	|----------------	|-----------------------	|------------------------------------------------------	|
