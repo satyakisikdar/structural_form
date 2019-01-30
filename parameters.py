@@ -15,9 +15,23 @@ class Parameters:
         self.datasets = set(dataset.split('.')[0] for dataset in os.listdir(DATA_LOCATION))
         self.repeats = np.ones(len(self.datasets))
         self.data_locations = {dataset: data_location + dataset for dataset in self.datasets}
-        self.similarity_dimensions = 1000 * self.repeats
+        self.similarity_dimensions = {dataset: 1000 for dataset in self.datasets}
 
-        #TODO: add variables from setrunps.m
+    def runtime_parameters(self, dataset):
+        # TODO: update function call for mat -> dict conversion
+        data = load_from_mat(self.data_locations[dataset])
+
+        if hasattr(data, 'type'):
+            self.run_type = 'relational'
+            self.num_objects = data[nobj]
+            self.speed = 5
+        elif data.size[0] == data.size[1] and not self.feature_force:
+            self.run_type = 'similarity'
+            self.num_objects = data.size[0]
+            self.run_dimension = self.similarity_dimensions[dataset]
+        else:
+            self.run_type = 'feature'
+            self.num_objects = data.size[0]
 
 
 # data transform options
