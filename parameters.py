@@ -21,7 +21,7 @@ class Parameters:
         # TODO: update function call for mat -> dict conversion
         data = load_from_mat(self.data_locations[dataset])
 
-        if hasattr(data, 'type'):
+        if 'type' in data:
             self.run_type = 'relational'
             self.num_objects = data[nobj]
             self.speed = 5
