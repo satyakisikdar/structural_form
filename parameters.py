@@ -1,10 +1,11 @@
 '''
-MATLAB files: setps.m, defaultps.m
+MATLAB files: setps.m, defaultps.m, setrunps.m
 '''
 
-import math
 import numpy as np
 import os
+
+import utilities
 
 DATA_LOCATION = './matlab_codes/data'
 
@@ -14,12 +15,12 @@ class Parameters:
             self.structures = set(structure.strip() for structure in structures)
         self.datasets = set(dataset.split('.')[0] for dataset in os.listdir(DATA_LOCATION))
         self.repeats = np.ones(len(self.datasets))
-        self.data_locations = {dataset: data_location + dataset for dataset in self.datasets}
+        self.data_locations = {dataset: DATA_LOCATION + dataset for dataset in self.datasets}
         self.similarity_dimensions = {dataset: 1000 for dataset in self.datasets}
 
     def runtime_parameters(self, dataset):
         # TODO: update function call for mat -> dict conversion
-        data = load_from_mat(self.data_locations[dataset])
+        data = utilities.load_from_mat(self.data_locations[dataset])
 
         if 'type' in data:
             self.run_type = 'relational'
