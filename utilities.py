@@ -1,27 +1,22 @@
 import scipy.io as sio
 import numpy as np
 
-def read_matlab_matrix(fname):
+def load_from_mat(fname):
     '''
 
     :param fname: Filename to the MATLAB matrix - wrapper to the scipy io loadmat function
-    :return: dictionary of names (rows), features (cols), data matrix - everything as a np array
+    :return: dictionary of fields and values. every value is a numpy array.
     '''
     mat = sio.loadmat(fname)
 
-    # flattening out the list of names and features into just strings
-    flattened_names = []
-    for name in mat['names']:
-        flattened_names.append(name[0][0])
-    mat['names'] = np.array(flattened_names)
+    # flattening out attributes other than matrices
+    new_mat = {}
+    for attr_name, attrs in mat.items():
+        if attr_name.startswith('__'):  # getting rid of the meta variables
+            continue
+        if len(attrs.shape) > 1 and attrs.shape[1] > 1:  # if the data is 2D, with more than 1 col, keep as is
+            new_mat[attr_name] = attrs
+            continue
+        new_mat[attr_name] = np.array(attrs[0])  # flatten this attribute
 
-    flattened_features = []
-    for feature in mat['features']:
-        flattened_features.append(feature[0][0])
-    mat['features'] = np.array(flattened_features)
-
-    # getting rid of the extra baggage
-    mat.pop('__header__')
-    mat.pop('__version__')
-    mat.pop('__globals__')
-    return mat
+    return new_mat
