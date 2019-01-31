@@ -23,6 +23,8 @@ class Parameters:
         data_dictionary = utilities.load_from_mat(self.data_locations[dataset_name])
         data = data_dictionary['data']
 
+        self.missing_data = False
+
         if 'type' in data_dictionary:
             self.run_type = 'relational'
             self.num_objects = data['nobj']
