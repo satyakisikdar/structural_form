@@ -9,7 +9,7 @@ data = data - globmean;
 
 if ps.missingdata
   for i = 1:ps.runps.chunknum
-    datac{i} = data(ps.runps.objind{i}, ps.runps.featind{i});
+    datac{i} = data(ps.runps.objind{i}, ps.runps.featind{i}); %datac = data chunks
   end 
 else
   datac{1} = data;
