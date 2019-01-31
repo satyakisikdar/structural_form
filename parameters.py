@@ -7,7 +7,7 @@ import os
 
 import utilities
 
-DATA_LOCATION = './matlab_codes/data'
+DATA_LOCATION = './matlab_codes/data/'
 
 class Parameters:
     def __init__(self):
@@ -18,21 +18,22 @@ class Parameters:
         self.data_locations = {dataset: DATA_LOCATION + dataset for dataset in self.datasets}
         self.similarity_dimensions = {dataset: 1000 for dataset in self.datasets}
 
-    def runtime_parameters(self, dataset):
+    def set_runtime_parameters(self, dataset_name):
         # TODO: update function call for mat -> dict conversion
-        data = utilities.load_from_mat(self.data_locations[dataset])
+        data_dictionary = utilities.load_from_mat(self.data_locations[dataset_name])
+        data = data_dictionary['data']
 
-        if 'type' in data:
+        if 'type' in data_dictionary:
             self.run_type = 'relational'
-            self.num_objects = data[nobj]
+            self.num_objects = data['nobj']
             self.speed = 5
-        elif data.size[0] == data.size[1] and not self.feature_force:
+        elif len(data.shape) > 1 and data.shape[0] == data.shape[1] and not self.feature_force:
             self.run_type = 'similarity'
-            self.num_objects = data.size[0]
-            self.run_dimension = self.similarity_dimensions[dataset]
+            self.num_objects = data.shape[0]
+            self.run_dimension = self.similarity_dimensions[dataset_name]
         else:
             self.run_type = 'feature'
-            self.num_objects = data.size[0]
+            self.num_objects = data.shape[0]
 
 
 # data transform options
@@ -78,7 +79,7 @@ class DefaultParameters(Parameters):
         self.outside_init = ''      # initialize with outside graph
         self.zgl_regularization = 0 # regularize using Zhu, Ghahramani and Lafferty: add terms
                                     # along the entire diagonal of the precision matrix
-        self.feature_force = 1      # set flag to analyze as a square feature matrix, not a
+        self.feature_force = 0      # set flag to analyze as a square feature matrix, not a
                                     # similarity matrix (which is default)
 
         self.edge_sum_steps = 10    # number of magnitudes
