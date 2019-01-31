@@ -1,6 +1,9 @@
 '''
 MATLAB file: runmodel.m
 '''
+import os
+
+from utilities import load_from_mat
 
 def run_model(params, struct_index, data_index, repeat_index, save_file):
     '''
@@ -22,5 +25,18 @@ def run_model(params, struct_index, data_index, repeat_index, save_file):
     names = None
     best_graph_log_probs = None
     best_graph = None
+
+    params.run_params['struct_name'] = params.structures[struct_index]
+
+    print(f'\tRepeat {repeat_index}')
+
+    file_root = f'./results/{params.structures[struct_index]}/out/{params.datasets[data_index]}{repeat_index}'
+    if not os.path.exists(file_root):
+        os.makedirs(file_root)
+
+    save_file = 'growth_history'
+    mat = load_from_mat(params.data_locations[data_index])
+
+
 
     return log_probability, graph, names, best_graph_log_probs, best_graph
