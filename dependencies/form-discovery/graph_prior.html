@@ -1,0 +1,85 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of graph_prior</title>
+  <meta name="keywords" content="graph_prior">
+  <meta name="description" content="Compute prior on graph GRAPH.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>graph_prior
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Compute prior on graph GRAPH.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function gp = graph_prior(graph, ps) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Compute prior on graph GRAPH.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="best_split.html" class="code" title="function [ll, part1, part2, newgraph]=best_split(graph, compind, c, pind, data, seedpairs, ps)">best_split</a>	Choose the best split of cluster node C.</li><li><a href="collapsedims.html" class="code" title="function [graph currscore overallchange nearmscores nearmgraphs] =collapsedims(graph, data, ps, epsilon, currscore,overallchange, loopmax, nearmscores, nearmgraphs, varargin);">collapsedims</a>	take graph with multiple components and squeeze out dimensions wherever</li><li><a href="gibbs_clean.html" class="code" title="function [ll graph] = gibbs_clean(graph, data, ps, varargin)">gibbs_clean</a>	SWAPTYPES: which swaps to include</li><li><a href="runmodel.html" class="code" title="function [ll, graph, names, bestglls, bestgraph] = runmodel(ps, sind,dind, rind, savefile)">runmodel</a>	Given data set DIND, find the best instance of form SIND.</li><li><a href="spr.html" class="code" title="function [graph currscore overallchange nearmscores nearmgraphs] =spr(graph, data, ps, i, epsilon, currscore, overallchange, debug,nearmscores, nearmgraphs)">spr</a>	"Sub-tree pruning and regrafting": try changing a tree structured graph</li><li><a href="structurefit.html" class="code" title="function [ll, graph, bestgraphlls, bestgraph] =structurefit(data, ps, graph, savefile)">structurefit</a>	Fit a given structure to matrix DATA using parameters PS</li><li><a href="swapobjclust.html" class="code" title="function [graph currscore overallchange nearmscores nearmgraphs] =swapobjclust(graph, data, ps, comp, epsilon, currscore,overallchange, loopmax, nearmscores, nearmgraphs, varargin);">swapobjclust</a>	Try improving GRAPH by swapping clusters or individual objects</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function gp = graph_prior(graph, ps)</a>
+0002 
+0003 <span class="comment">% Compute prior on graph GRAPH.</span>
+0004 
+0005 <span class="comment">% GP = log P(GRAPH).</span>
+0006 
+0007 <span class="comment">% if some objects are out of play, gp will be proportional to the true prior</span>
+0008 <span class="comment">% but the actual number will be wrong</span>
+0009 
+0010 nclusternodes = size(graph.adjcluster,1);
+0011 
+0012 <span class="keyword">switch</span> graph.type
+0013  <span class="keyword">case</span> {<span class="string">'partition'</span>, <span class="string">'connected'</span>, <span class="string">'partitionnoself'</span>, <span class="string">'connectednoself'</span>}
+0014    index = 1;     
+0015  <span class="keyword">case</span> {<span class="string">'chain'</span>, <span class="string">'undirchain'</span>, <span class="string">'undirchainnoself'</span>}
+0016    index = 2; 
+0017  <span class="keyword">case</span> {<span class="string">'ring'</span>, <span class="string">'undirring'</span>, <span class="string">'undirringnoself'</span>}
+0018    index = 3;
+0019  <span class="keyword">case</span> {<span class="string">'tree'</span>}
+0020    index = 4;
+0021    nclusternodes = nclusternodes - length(graph.illegal);
+0022  <span class="keyword">case</span> {<span class="string">'hierarchy'</span>, <span class="string">'undirhierarchy'</span>, <span class="string">'undirhierarchynoself'</span>, <span class="string">'undirdomtree'</span>, <span class="string">'undirdomtreenoself'</span>}
+0023    index = 5;
+0024  <span class="keyword">case</span> {<span class="string">'domtree'</span>, <span class="string">'dirhierarchy'</span>, <span class="string">'dirhierarchynoself'</span>, <span class="string">'dirdomtreenoself'</span>}
+0025    index = 6;
+0026  <span class="keyword">case</span> {<span class="string">'order'</span>, <span class="string">'dirchain'</span>, <span class="string">'dirchainnoself'</span>, <span class="string">'ordernoself'</span>}
+0027    index = 7;
+0028  <span class="keyword">case</span> {<span class="string">'dirring'</span>, <span class="string">'dirringnoself'</span>}
+0029    index = 8;
+0030  <span class="keyword">case</span> {<span class="string">'grid'</span>}
+0031    index = 9;
+0032  <span class="keyword">case</span> {<span class="string">'cylinder'</span>}
+0033    index = 10;
+0034  <span class="keyword">otherwise</span>
+0035    error(<span class="string">'Unexpected structure'</span>);
+0036 <span class="keyword">end</span>
+0037 
+0038 gp = ps.logps{index}(nclusternodes);
+0039</pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

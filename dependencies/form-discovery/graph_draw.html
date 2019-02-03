@@ -1,0 +1,623 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of graph_draw</title>
+  <meta name="keywords" content="graph_draw">
+  <meta name="description" content="[x, y, h] = graph_draw(adj, varargin)">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>graph_draw
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>[x, y, h] = graph_draw(adj, varargin)</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [x, y, h] = graph_draw(adj, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">  [x, y, h] = graph_draw(adj, varargin)  
+
+ INPUTS:      ADJ   -  Adjacency matrix (source, sink)
+      'linestyle'   -  default '-' 
+      'linewidth'   -  default .5
+      'linecolor'   -  default Black
+      'fontsize'    -  fontsize for labels, default 8 
+      'node_labels' -  Cell array containing labels &lt;Default : '1':'N'&gt;
+      'node_shapes' -  1 if node is a box, 0 if oval &lt;Default : zeros&gt;
+      'X'  Coordinates of nodes on the unit square &lt;Default : calls make_layout&gt;
+      'Y'     
+
+ OUTPUT:   x, y   -  Coordinates of nodes on the unit square
+               h  -  Object handles [h(i,1) is the text handle - color
+                                     h(i,2) is the circle handle - facecolor]
+ NOTES: 
+          Shades  nodes linked to self !</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="draw_dot.html" class="code" title="function [xret, yret, labels] = draw_dot(adj, labels, varargin);">draw_dot</a>	</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function [t, wd] = textoval(x, y, str, fontsize, c, nodemult)</a></li><li><a href="#_sub2" class="code">function [p] = ellipse(x, y, rx, ry, c)</a></li><li><a href="#_sub3" class="code">function [h, wd] = textbox(x,y,str,c)</a></li><li><a href="#_sub4" class="code">function [h,yy,zz] = my_arrow(varargin)</a></li><li><a href="#_sub5" class="code">function [out,is2D] = arrow_is2DXY(ax)</a></li><li><a href="#_sub6" class="code">function out = arrow_WarpToFill(notstretched,manualcamera,curax)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [x, y, h] = graph_draw(adj, varargin)</a>
+0002 <span class="comment">%  [x, y, h] = graph_draw(adj, varargin)</span>
+0003 <span class="comment">%</span>
+0004 <span class="comment">% INPUTS:      ADJ   -  Adjacency matrix (source, sink)</span>
+0005 <span class="comment">%      'linestyle'   -  default '-'</span>
+0006 <span class="comment">%      'linewidth'   -  default .5</span>
+0007 <span class="comment">%      'linecolor'   -  default Black</span>
+0008 <span class="comment">%      'fontsize'    -  fontsize for labels, default 8</span>
+0009 <span class="comment">%      'node_labels' -  Cell array containing labels &lt;Default : '1':'N'&gt;</span>
+0010 <span class="comment">%      'node_shapes' -  1 if node is a box, 0 if oval &lt;Default : zeros&gt;</span>
+0011 <span class="comment">%      'X'  Coordinates of nodes on the unit square &lt;Default : calls make_layout&gt;</span>
+0012 <span class="comment">%      'Y'</span>
+0013 <span class="comment">%</span>
+0014 <span class="comment">% OUTPUT:   x, y   -  Coordinates of nodes on the unit square</span>
+0015 <span class="comment">%               h  -  Object handles [h(i,1) is the text handle - color</span>
+0016 <span class="comment">%                                     h(i,2) is the circle handle - facecolor]</span>
+0017 <span class="comment">% NOTES:</span>
+0018 <span class="comment">%          Shades  nodes linked to self !</span>
+0019 
+0020 <span class="comment">% 24 Feb 2004  cleaned up, optimized and corrected by Leon Peshkin pesha @ ai.mit.edu</span>
+0021 <span class="comment">% Apr-2000  draw_graph   Ali Taylan Cemgil   &lt;cemgil@mbfys.kun.nl&gt;</span>
+0022 <span class="comment">% 1995-1997 arrow        Erik A. Johnson     &lt;johnsone@uiuc.edu&gt;</span>
+0023 
+0024 linestyle = <span class="string">'-'</span>;       <span class="comment">%   --   -.</span>
+0025 linewidth = .5;        <span class="comment">%   2</span>
+0026 linecolor = <span class="string">'Black'</span>;   <span class="comment">%   Red</span>
+0027 nodemult = 0.5;
+0028 fontsize = 8;
+0029 N = size(adj,1);
+0030 color = ones(N, 3);         <span class="comment">% colors of elipses around text</span>
+0031 labels = cellstr(int2str((1:N)'));    <span class="comment">%  labels = cellstr(char(zeros(N,1)+double('+')));</span>
+0032 node_t = zeros(N,1);                  <span class="comment">%</span>
+0033 <span class="keyword">for</span> i = 1:2:nargin-1                  <span class="comment">% get optional args</span>
+0034     <span class="keyword">switch</span> varargin{i}
+0035         <span class="keyword">case</span> <span class="string">'linestyle'</span>, linestyle = varargin{i+1};
+0036         <span class="keyword">case</span> <span class="string">'linewidth'</span>, linewidth = varargin{i+1};
+0037         <span class="keyword">case</span> <span class="string">'linecolor'</span>, linecolor = varargin{i+1};
+0038         <span class="keyword">case</span> <span class="string">'node_labels'</span>, labels  = varargin{i+1};
+0039         <span class="keyword">case</span> <span class="string">'fontsize'</span>,  fontsize = varargin{i+1}; 
+0040         <span class="keyword">case</span> <span class="string">'node_shapes'</span>, node_t  = varargin{i+1};  node_t = node_t(:);
+0041         <span class="keyword">case</span> <span class="string">'nodemult'</span>,  nodemult = varargin{i+1};
+0042         <span class="keyword">case</span> <span class="string">'X'</span>, x = varargin{i+1};
+0043         <span class="keyword">case</span> <span class="string">'Y'</span>, y = varargin{i+1};
+0044     <span class="keyword">end</span>
+0045 <span class="keyword">end</span>
+0046 
+0047 lp_ndx = find(diag(adj));       <span class="comment">%  recover from self-loops = diagonal ones</span>
+0048 color(lp_ndx,:) = repmat([.8 .8 .8],length(lp_ndx),1);     <span class="comment">%  makes self-looped nodes blue</span>
+0049 adj = adj - diag(diag(adj));    <span class="comment">% clean up the diagonal</span>
+0050 
+0051 axis([0 1 0 1]);
+0052 set(gca,<span class="string">'XTick'</span>,[], <span class="string">'YTick'</span>,[], <span class="string">'box'</span>,<span class="string">'on'</span>); <span class="comment">% axis('square');   %colormap(flipud(gray));</span>
+0053 
+0054 <span class="keyword">if</span> (~exist(<span class="string">'x'</span>,<span class="string">'var'</span>) | ~exist(<span class="string">'x'</span>,<span class="string">'var'</span>))
+0055      [x y] = make_layout(adj);
+0056 <span class="keyword">end</span>;
+0057 
+0058 idx1 = find(node_t == 0); wd1 = [];   <span class="comment">%  Draw  nodes</span>
+0059 <span class="keyword">if</span> ~isempty(idx1),
+0060     [h1 wd1] = <a href="#_sub1" class="code" title="subfunction [t, wd] = textoval(x, y, str, fontsize, c, nodemult)">textoval</a>(x(idx1), y(idx1), labels(idx1), fontsize, color, nodemult);
+0061 <span class="keyword">end</span>;
+0062 
+0063 idx2 = find(node_t ~= 0); wd2 = [];
+0064 <span class="keyword">if</span> ~isempty(idx2),
+0065     [h2 wd2] = <a href="#_sub3" class="code" title="subfunction [h, wd] = textbox(x,y,str,c)">textbox</a>(x(idx2), y(idx2), labels(idx2), color);
+0066 <span class="keyword">end</span>;
+0067 
+0068 wd = zeros(size(wd1,1) + size(wd2,1),2);
+0069 <span class="keyword">if</span> ~isempty(idx1), wd(idx1, :) = wd1; <span class="keyword">end</span>;
+0070 <span class="keyword">if</span> ~isempty(idx2), wd(idx2, :) = wd2; <span class="keyword">end</span>;
+0071 
+0072 <span class="keyword">for</span> node = 1:N                          <span class="comment">%  Draw  edges</span>
+0073   edges = find(adj(node,:) == 1);
+0074   <span class="keyword">for</span> node2 = edges
+0075     sign = 1;
+0076     <span class="keyword">if</span> ((x(node2) - x(node)) == 0)
+0077         <span class="keyword">if</span> (y(node) &gt; y(node2)), alpha = -pi/2; <span class="keyword">else</span> alpha = pi/2; <span class="keyword">end</span>;
+0078     <span class="keyword">else</span>
+0079         alpha = atan((y(node2)-y(node))/(x(node2)-x(node)));
+0080         <span class="keyword">if</span> (x(node2) &lt;= x(node)), sign = -1; <span class="keyword">end</span>;
+0081     <span class="keyword">end</span>;
+0082     dy1 = sign.*wd(node,2).*sin(alpha);   dx1 = sign.*wd(node,1).*cos(alpha);
+0083     dy2 = sign.*wd(node2,2).*sin(alpha);  dx2 = sign.*wd(node2,1).*cos(alpha);    
+0084     <span class="keyword">if</span>  (adj(node2,node) == 0)           <span class="comment">% if directed edge</span>
+0085         <a href="#_sub4" class="code" title="subfunction [h,yy,zz] = my_arrow(varargin)">my_arrow</a>([x(node)+dx1 y(node)+dy1], [x(node2)-dx2 y(node2)-dy2]);
+0086     <span class="keyword">else</span>       
+0087         <a href="#_sub4" class="code" title="subfunction [h,yy,zz] = my_arrow(varargin)">my_arrow</a>([x(node)+dx1 y(node)+dy1], [x(node2)-dx2 y(node2)-dy2]);
+0088     <span class="keyword">if</span> 0 <span class="comment">% ckemp</span>
+0089         line([x(node)+dx1 x(node2)-dx2], [y(node)+dy1 y(node2)-dy2], <span class="keyword">...</span>
+0090             <span class="string">'Color'</span>, linecolor, <span class="string">'LineStyle'</span>, linestyle, <span class="string">'LineWidth'</span>, linewidth);
+0091         adj(node2,node) = -1;         <span class="comment">% Prevent drawing lines twice</span>
+0092     <span class="keyword">end</span>
+0093     <span class="keyword">end</span>;
+0094   <span class="keyword">end</span>;
+0095 <span class="keyword">end</span>;
+0096 
+0097 <span class="keyword">if</span> nargout &gt; 2
+0098     h = zeros(length(wd),2);
+0099     <span class="keyword">if</span> ~isempty(idx1), h(idx1,:) = h1;   <span class="keyword">end</span>;
+0100     <span class="keyword">if</span> ~isempty(idx2), h(idx2,:) = h2;   <span class="keyword">end</span>;
+0101 <span class="keyword">end</span>;
+0102 
+0103 <a name="_sub1" href="#_subfunctions" class="code">function [t, wd] = textoval(x, y, str, fontsize, c, nodemult)</a>
+0104 <span class="comment">%  [t, wd] = textoval(x, y, str, fontsize)    Draws an oval around text objects</span>
+0105 <span class="comment">% INPUT:   x, y - Coordinates</span>
+0106 <span class="comment">%           str - Strings</span>
+0107 <span class="comment">%             c - colors</span>
+0108 <span class="comment">% OUTPUT:     t - Object Handles</span>
+0109 <span class="comment">%         width - x and y  width of ovals</span>
+0110 temp = [];
+0111 <span class="keyword">if</span> ~isa(str,<span class="string">'cell'</span>), str = cellstr(str); <span class="keyword">end</span>;
+0112 N = length(str);    
+0113 wd = zeros(N,2);
+0114 <span class="keyword">for</span> i = 1:N,
+0115     tx = text(x(i),y(i),str{i},<span class="string">'HorizontalAlignment'</span>,<span class="string">'center'</span>,<span class="string">'VerticalAlign'</span>,<span class="string">'middle'</span>,<span class="string">'FontSize'</span>, fontsize);
+0116     sz = get(tx, <span class="string">'Extent'</span>);
+0117     wy = sz(4);
+0118     wx = max(2/3*sz(3), wy); 
+0119     wx = nodemult * wx;        <span class="comment">%  0.9 might want to play with this .9 and .5 coefficients</span>
+0120     wy = nodemult * wy;
+0121     ptc = <a href="#_sub2" class="code" title="subfunction [p] = ellipse(x, y, rx, ry, c)">ellipse</a>(x(i), y(i), wx, wy, c(i,:));
+0122     set(ptc, <span class="string">'FaceColor'</span>, c(i,:));   <span class="comment">% 'w'</span>
+0123     wd(i,:) = [wx wy];
+0124     delete(tx);
+0125     tx = text(x(i),y(i),str{i},<span class="string">'HorizontalAlignment'</span>,<span class="string">'center'</span>,<span class="string">'VerticalAlign'</span>,<span class="string">'middle'</span>, <span class="string">'FontSize'</span>, fontsize);      
+0126     temp = [temp;  tx ptc];
+0127 <span class="keyword">end</span>;
+0128 t = temp; 
+0129 
+0130 <a name="_sub2" href="#_subfunctions" class="code">function [p] = ellipse(x, y, rx, ry, c)</a>
+0131 <span class="comment">%  [p] = ellipse(x, y, rx, ry)    Draws Ellipse shaped patch objects</span>
+0132 <span class="comment">% INPUT:  x,y -  N x 1 vectors of x and y coordinates</span>
+0133 <span class="comment">%      Rx, Ry -   Radii</span>
+0134 <span class="comment">%           C -  colors</span>
+0135 <span class="comment">% OUTPUT:   p -   Handles of Ellipse shaped path objects</span>
+0136 
+0137   <span class="keyword">if</span> length(rx)== 1, rx = ones(size(x)).*rx; <span class="keyword">end</span>;
+0138   <span class="keyword">if</span> length(ry)== 1, ry = ones(size(x)).*ry; <span class="keyword">end</span>;
+0139 N = length(x);
+0140 p = zeros(size(x));
+0141 t = 0:pi/30:2*pi;
+0142 <span class="keyword">for</span> i = 1:N
+0143     px = rx(i) * cos(t) + x(i);    py = ry(i) * sin(t) + y(i);
+0144     p(i) = patch(px, py, c(i,:));
+0145 <span class="keyword">end</span>;
+0146 
+0147 <a name="_sub3" href="#_subfunctions" class="code">function [h, wd] = textbox(x,y,str,c)</a>
+0148 <span class="comment">%  [h, wd] = textbox(x,y,str)    draws a box around the text</span>
+0149 <span class="comment">% INPUT:  x, y - Coordinates</span>
+0150 <span class="comment">%         str  - Strings</span>
+0151 <span class="comment">% OUTPUT:    h - Object Handles</span>
+0152 <span class="comment">%           wd - x and y Width of boxes</span>
+0153 
+0154 h = [];
+0155 <span class="keyword">if</span> ~isa(str,<span class="string">'cell'</span>) str=cellstr(str); <span class="keyword">end</span>;    
+0156 N = length(str);
+0157 <span class="keyword">for</span> i = 1:N,
+0158     tx = text(x(i),y(i),str{i},<span class="string">'HorizontalAlignment'</span>,<span class="string">'center'</span>,<span class="string">'VerticalAlign'</span>,<span class="string">'middle'</span>);
+0159     sz = get(tx, <span class="string">'Extent'</span>);
+0160     wy = 2/3 * sz(4); wyB = y(i) - wy;  wyT = y(i) + wy;
+0161     wx = max(2/3 * sz(3), wy); wxL = x(i) - wx; wxR = x(i) + wx;
+0162     ptc = patch([wxL wxR wxR wxL], [wyT wyT wyB wyB], c(i,:)); 
+0163     set(ptc, <span class="string">'FaceColor'</span>, c(i,:));   <span class="comment">%  'w'</span>
+0164     wd(i,:) = [wx wy];
+0165     delete(tx);
+0166     tx = text(x(i),y(i),str{i},<span class="string">'HorizontalAlignment'</span>,<span class="string">'center'</span>,<span class="string">'VerticalAlign'</span>,<span class="string">'middle'</span>);      
+0167     h = [h; tx ptc];
+0168 <span class="keyword">end</span>;
+0169 
+0170 <a name="_sub4" href="#_subfunctions" class="code">function [h,yy,zz] = my_arrow(varargin)</a>
+0171 <span class="comment">% [h,yy,zz] = my_arrow(varargin)  Draw a line with an arrowhead.</span>
+0172 
+0173 <span class="comment">% A lot of the original code is removed and most of the remaining can probably go too</span>
+0174 <span class="comment">% since it comes from a general use function only being called inone context. - Leon Peshkin</span>
+0175 <span class="comment">% Copyright 1997, Erik A. Johnson &lt;johnsone@uiuc.edu&gt;, 8/14/97</span>
+0176 
+0177 ax         = [];       <span class="comment">% set values to empty matrices</span>
+0178 deflen        = 12;  <span class="comment">%  16</span>
+0179 deflen        = 5;  <span class="comment">%  3 for whitman class report, 5 for cog sci 08</span>
+0180 
+0181 defbaseangle  = 45;  <span class="comment">%  90</span>
+0182 defbaseangle  = 90;  <span class="comment">%  90</span>
+0183 
+0184 deftipangle   = 15;
+0185 deftipangle   = 12;  <span class="comment">% cog sci 2008</span>
+0186 
+0187 defwid = 0;  defpage = 0;  defends = 1;
+0188 ArrowTag = <span class="string">'Arrow'</span>;  <span class="comment">% The 'Tag' we'll put on our arrows</span>
+0189 start      = varargin{1};    <span class="comment">% fill empty arguments</span>
+0190 stop       = varargin{2}; 
+0191 crossdir   = [NaN NaN NaN];   
+0192 len        = NaN; baseangle  = NaN;  tipangle = NaN;   wid = NaN;              
+0193 page       = 0; ends  = NaN;   
+0194 start = [start NaN];   stop = [stop NaN];
+0195 o         = 1;     <span class="comment">% expand single-column arguments</span>
+0196 ax        = gca;
+0197 <span class="comment">% set up the UserData data (here so not corrupted by log10's and such)</span>
+0198 ud = [start stop len baseangle tipangle wid page crossdir ends];
+0199 <span class="comment">% Get axes limits, range, min; correct for aspect ratio and log scale</span>
+0200 axm  = zeros(3,1);   axr = axm;   axrev = axm;  ap  = zeros(2,1);
+0201 xyzlog = axm; limmin    = ap;  limrange  = ap;  oldaxlims = zeros(1,7);
+0202 oneax = 1;      <span class="comment">% all(ax==ax(1));  LPM</span>
+0203 <span class="keyword">if</span> (oneax),
+0204     T = zeros(4,4); invT = zeros(4,4);
+0205 <span class="keyword">else</span>
+0206     T = zeros(16,1); invT = zeros(16,1); <span class="keyword">end</span>
+0207 axnotdone = 1; <span class="comment">% logical(ones(size(ax)));  LPM</span>
+0208 <span class="keyword">while</span> (any(axnotdone)),
+0209     ii = 1;  <span class="comment">% LPM min(find(axnotdone));</span>
+0210     curax = ax(ii);
+0211     curpage = page(ii);
+0212     <span class="comment">% get axes limits and aspect ratio</span>
+0213     axl = [get(curax,<span class="string">'XLim'</span>); get(curax,<span class="string">'YLim'</span>); get(curax,<span class="string">'ZLim'</span>)];
+0214     oldaxlims(min(find(oldaxlims(:,1)==0)),:) = [curax reshape(axl',1,6)];
+0215     <span class="comment">% get axes size in pixels (points)</span>
+0216     u = get(curax,<span class="string">'Units'</span>);
+0217     axposoldunits = get(curax,<span class="string">'Position'</span>);
+0218     really_curpage = curpage &amp; strcmp(u,<span class="string">'normalized'</span>);
+0219     <span class="keyword">if</span> (really_curpage),
+0220         curfig = get(curax,<span class="string">'Parent'</span>);          pu = get(curfig,<span class="string">'PaperUnits'</span>);
+0221         set(curfig,<span class="string">'PaperUnits'</span>,<span class="string">'points'</span>);  pp = get(curfig,<span class="string">'PaperPosition'</span>);
+0222         set(curfig,<span class="string">'PaperUnits'</span>,pu);         set(curax,<span class="string">'Units'</span>,<span class="string">'pixels'</span>);
+0223         curapscreen = get(curax,<span class="string">'Position'</span>); set(curax,<span class="string">'Units'</span>,<span class="string">'normalized'</span>);
+0224         curap = pp.*get(curax,<span class="string">'Position'</span>);
+0225     <span class="keyword">else</span>,
+0226         set(curax,<span class="string">'Units'</span>,<span class="string">'pixels'</span>);
+0227         curapscreen = get(curax,<span class="string">'Position'</span>);
+0228         curap = curapscreen;
+0229     <span class="keyword">end</span>;
+0230     set(curax,<span class="string">'Units'</span>,u);      set(curax,<span class="string">'Position'</span>,axposoldunits);
+0231     <span class="comment">% handle non-stretched axes position</span>
+0232     str_stretch = {<span class="string">'DataAspectRatioMode'</span>; <span class="string">'PlotBoxAspectRatioMode'</span> ; <span class="string">'CameraViewAngleMode'</span> };
+0233     str_camera  = {<span class="string">'CameraPositionMode'</span>  ; <span class="string">'CameraTargetMode'</span> ; <span class="keyword">...</span>
+0234                     <span class="string">'CameraViewAngleMode'</span> ; <span class="string">'CameraUpVectorMode'</span>};
+0235     notstretched = strcmp(get(curax,str_stretch),<span class="string">'manual'</span>);
+0236     manualcamera = strcmp(get(curax,str_camera),<span class="string">'manual'</span>);
+0237     <span class="keyword">if</span> ~<a href="#_sub6" class="code" title="subfunction out = arrow_WarpToFill(notstretched,manualcamera,curax)">arrow_WarpToFill</a>(notstretched,manualcamera,curax),
+0238         <span class="comment">% find the true pixel size of the actual axes</span>
+0239         texttmp = text(axl(1,[1 2 2 1 1 2 2 1]), <span class="keyword">...</span>
+0240                        axl(2,[1 1 2 2 1 1 2 2]), axl(3,[1 1 1 1 2 2 2 2]),<span class="string">''</span>);
+0241         set(texttmp,<span class="string">'Units'</span>,<span class="string">'points'</span>);
+0242         textpos = get(texttmp,<span class="string">'Position'</span>);
+0243         delete(texttmp);
+0244         textpos = cat(1,textpos{:});
+0245         textpos = max(textpos(:,1:2)) - min(textpos(:,1:2));
+0246         <span class="comment">% adjust the axes position</span>
+0247         <span class="keyword">if</span> (really_curpage),              <span class="comment">% adjust to printed size</span>
+0248             textpos = textpos * min(curap(3:4)./textpos);
+0249             curap = [curap(1:2)+(curap(3:4)-textpos)/2 textpos];
+0250         <span class="keyword">else</span>,                        <span class="comment">% adjust for pixel roundoff</span>
+0251             textpos = textpos * min(curapscreen(3:4)./textpos);
+0252             curap = [curap(1:2)+(curap(3:4)-textpos)/2 textpos];
+0253         <span class="keyword">end</span>;
+0254     <span class="keyword">end</span>;
+0255     <span class="comment">% adjust limits for log scale on axes</span>
+0256     curxyzlog = [strcmp(get(curax,<span class="string">'XScale'</span>),<span class="string">'log'</span>); <span class="keyword">...</span>
+0257                  strcmp(get(curax,<span class="string">'YScale'</span>),<span class="string">'log'</span>); strcmp(get(curax,<span class="string">'ZScale'</span>),<span class="string">'log'</span>)];
+0258     <span class="keyword">if</span> (any(curxyzlog)),
+0259         ii = find([curxyzlog;curxyzlog]);
+0260         <span class="keyword">if</span> (any(axl(ii)&lt;=0)),
+0261             error([upper(mfilename) <span class="string">' does not support non-positive limits on log-scaled axes.'</span>]);
+0262         <span class="keyword">else</span>,
+0263             axl(ii) = log10(axl(ii));
+0264         <span class="keyword">end</span>;
+0265     <span class="keyword">end</span>;
+0266     <span class="comment">% correct for 'reverse' direction on axes;</span>
+0267     curreverse = [strcmp(get(curax,<span class="string">'XDir'</span>),<span class="string">'reverse'</span>); <span class="keyword">...</span>
+0268                   strcmp(get(curax,<span class="string">'YDir'</span>),<span class="string">'reverse'</span>); strcmp(get(curax,<span class="string">'ZDir'</span>),<span class="string">'reverse'</span>)];
+0269     ii = find(curreverse);
+0270     <span class="keyword">if</span> ~isempty(ii),
+0271         axl(ii,[1 2])=-axl(ii,[2 1]);
+0272     <span class="keyword">end</span>;
+0273     <span class="comment">% compute the range of 2-D values</span>
+0274     curT = get(curax,<span class="string">'Xform'</span>);
+0275     lim = curT*[0 1 0 1 0 1 0 1;0 0 1 1 0 0 1 1;0 0 0 0 1 1 1 1;1 1 1 1 1 1 1 1];
+0276     lim = lim(1:2,:)./([1;1]*lim(4,:));
+0277     curlimmin = min(lim')';
+0278     curlimrange = max(lim')' - curlimmin;
+0279     curinvT = inv(curT);
+0280     <span class="keyword">if</span> (~oneax),
+0281         curT = curT.'; curinvT = curinvT.'; curT = curT(:); curinvT = curinvT(:);
+0282     <span class="keyword">end</span>;
+0283     <span class="comment">% check which arrows to which cur corresponds</span>
+0284     ii = find((ax==curax)&amp;(page==curpage));
+0285     oo = ones(1,length(ii));     axr(:,ii) = diff(axl')' * oo;
+0286     axm(:,ii) = axl(:,1) * oo;  axrev(:,ii) = curreverse  * oo;
+0287     ap(:,ii)  = curap(3:4)' * oo; xyzlog(:,ii) = curxyzlog   * oo;
+0288     limmin(:,ii) = curlimmin  * oo;  limrange(:,ii) = curlimrange * oo;
+0289     <span class="keyword">if</span> (oneax),
+0290         T    = curT;  invT = curinvT;
+0291     <span class="keyword">else</span>,
+0292         T(:,ii) = curT * oo; invT(:,ii) = curinvT * oo;
+0293     <span class="keyword">end</span>;
+0294     axnotdone(ii) = zeros(1,length(ii));
+0295 <span class="keyword">end</span>;
+0296 oldaxlims(oldaxlims(:,1)==0,:) = [];
+0297 
+0298 <span class="comment">% correct for log scales</span>
+0299 curxyzlog = xyzlog.';  ii = find(curxyzlog(:));
+0300 <span class="keyword">if</span> ~isempty(ii),
+0301     start(ii) = real(log10(start(ii))); stop(ii) = real(log10(stop(ii)));
+0302     <span class="keyword">if</span> (all(imag(crossdir)==0)), <span class="comment">% pulled (ii) subscript on crossdir, 12/5/96 eaj</span>
+0303         crossdir(ii) = real(log10(crossdir(ii)));
+0304     <span class="keyword">end</span>;
+0305 <span class="keyword">end</span>;
+0306 ii = find(axrev.');    <span class="comment">% correct for reverse directions</span>
+0307 <span class="keyword">if</span> ~isempty(ii),
+0308     start(ii) = -start(ii);  stop(ii) = -stop(ii); crossdir(ii) = -crossdir(ii);
+0309 <span class="keyword">end</span>;
+0310 start  = start.';  stop  = stop.';   <span class="comment">% transpose start/stop values</span>
+0311 <span class="comment">% take care of defaults, page was done above</span>
+0312 ii = find(isnan(start(:)));  <span class="keyword">if</span> ~isempty(ii),  start(ii) = axm(ii)+axr(ii)/2;  <span class="keyword">end</span>;
+0313 ii = find(isnan(stop(:)));  <span class="keyword">if</span> ~isempty(ii),  stop(ii) = axm(ii)+axr(ii)/2;  <span class="keyword">end</span>;
+0314 ii = find(isnan(crossdir(:))); <span class="keyword">if</span> ~isempty(ii),  crossdir(ii) = zeros(length(ii),1); <span class="keyword">end</span>;
+0315 ii = find(isnan(len));  <span class="keyword">if</span> ~isempty(ii),  len(ii) = ones(length(ii),1)*deflen; <span class="keyword">end</span>;
+0316 baseangle(ii) = ones(length(ii),1)*defbaseangle;  tipangle(ii) = ones(length(ii),1)*deftipangle; 
+0317 wid(ii) = ones(length(ii),1) * defwid;   ends(ii) = ones(length(ii),1) * defends;
+0318 <span class="comment">% transpose rest of values</span>
+0319 len  = len.';  baseangle = baseangle.'; tipangle  = tipangle.'; wid = wid.';  
+0320 page = page.'; crossdir  = crossdir.';  ends = ends.'; ax   = ax.';
+0321 
+0322 <span class="comment">% for all points with start==stop, start=stop-(verysmallvalue)*(up-direction);</span>
+0323 ii = find(all(start==stop));
+0324 <span class="keyword">if</span> ~isempty(ii),
+0325     <span class="comment">% find an arrowdir vertical on screen and perpendicular to viewer</span>
+0326     <span class="comment">%    transform to 2-D</span>
+0327         tmp1 = [(stop(:,ii)-axm(:,ii))./axr(:,ii);ones(1,length(ii))];
+0328         <span class="keyword">if</span> (oneax), twoD=T*tmp1;
+0329         <span class="keyword">else</span>, tmp1=[tmp1;tmp1;tmp1;tmp1]; tmp1=T(:,ii).*tmp1;
+0330               tmp2=zeros(4,4*length(ii)); tmp2(:)=tmp1(:);
+0331               twoD=zeros(4,length(ii)); twoD(:)=sum(tmp2)'; <span class="keyword">end</span>;
+0332         twoD=twoD./(ones(4,1)*twoD(4,:));
+0333     <span class="comment">%    move the start point down just slightly</span>
+0334         tmp1 = twoD + [0;-1/1000;0;0]*(limrange(2,ii)./ap(2,ii));
+0335     <span class="comment">%    transform back to 3-D</span>
+0336         <span class="keyword">if</span> (oneax), threeD=invT*tmp1;
+0337         <span class="keyword">else</span>, tmp1=[tmp1;tmp1;tmp1;tmp1]; tmp1=invT(:,ii).*tmp1;
+0338               tmp2=zeros(4,4*length(ii)); tmp2(:)=tmp1(:);
+0339               threeD=zeros(4,length(ii)); threeD(:)=sum(tmp2)'; <span class="keyword">end</span>;
+0340         start(:,ii) = (threeD(1:3,:)./(ones(3,1)*threeD(4,:))).*axr(:,ii)+axm(:,ii);
+0341 <span class="keyword">end</span>;
+0342 <span class="comment">% compute along-arrow points</span>
+0343 <span class="comment">%    transform Start points</span>
+0344     tmp1 = [(start-axm)./axr; 1];
+0345     <span class="keyword">if</span> (oneax), X0=T*tmp1;
+0346     <span class="keyword">else</span>, tmp1 = [tmp1;tmp1;tmp1;tmp1]; tmp1=T.*tmp1;
+0347           tmp2 = zeros(4,4); tmp2(:)=tmp1(:);
+0348           X0=zeros(4,1); X0(:)=sum(tmp2)'; <span class="keyword">end</span>;
+0349     X0=X0./(ones(4,1)*X0(4,:));
+0350 <span class="comment">%    transform Stop points</span>
+0351     tmp1=[(stop-axm)./axr; 1];
+0352     <span class="keyword">if</span> (oneax), Xf=T*tmp1;
+0353     <span class="keyword">else</span>, tmp1=[tmp1;tmp1;tmp1;tmp1]; tmp1=T.*tmp1;
+0354           tmp2=zeros(4,4); tmp2(:)=tmp1(:);
+0355           Xf=zeros(4,1); Xf(:)=sum(tmp2)'; <span class="keyword">end</span>;
+0356     Xf=Xf./(ones(4,1)*Xf(4,:));
+0357 <span class="comment">%    compute pixel distance between points</span>
+0358     D = sqrt(sum(((Xf(1:2,:)-X0(1:2,:)).*(ap./limrange)).^2));
+0359 <span class="comment">%    compute and modify along-arrow distances</span>
+0360     len1 = len;
+0361     len2 = len - (len.*tan(tipangle/180*pi)-wid/2).*tan((90-baseangle)/180*pi);
+0362     slen0 = 0;     slen1 = len1 .* ((ends==2)|(ends==3));
+0363     slen2 = len2 .* ((ends==2)|(ends==3));
+0364     len0 = 0; len1  = len1 .* ((ends==1)|(ends==3));
+0365     len2  = len2 .* ((ends==1)|(ends==3));
+0366       ii = find((ends==1)&amp;(D&lt;len2));      <span class="comment">%    for no start arrowhead</span>
+0367       <span class="keyword">if</span> ~isempty(ii),
+0368           slen0(ii) = D(ii)-len2(ii);
+0369       <span class="keyword">end</span>;
+0370       ii = find((ends==2)&amp;(D&lt;slen2));      <span class="comment">%    for no end arrowhead</span>
+0371       <span class="keyword">if</span> ~isempty(ii),
+0372           len0(ii) = D(ii)-slen2(ii);
+0373       <span class="keyword">end</span>;
+0374     len1  = len1  + len0;    len2 = len2  + len0;
+0375     slen1 = slen1 + slen0;     slen2 = slen2 + slen0;
+0376      <span class="comment">% note:  the division by D below will probably not be accurate if both</span>
+0377      <span class="comment">%        of the following are true:</span>
+0378      <span class="comment">%           1. the ratio of the line length to the arrowhead</span>
+0379      <span class="comment">%              length is large</span>
+0380      <span class="comment">%           2. the view is highly perspective.</span>
+0381 <span class="comment">%    compute stoppoints</span>
+0382     tmp1 = X0.*(ones(4,1)*(len0./D))+Xf.*(ones(4,1)*(1-len0./D));
+0383     <span class="keyword">if</span> (oneax), tmp3 = invT*tmp1;
+0384     <span class="keyword">else</span>, tmp1 = [tmp1;tmp1;tmp1;tmp1]; tmp1 = invT.*tmp1;
+0385           tmp2 = zeros(4,4); tmp2(:) = tmp1(:);
+0386           tmp3 = zeros(4,1); tmp3(:) = sum(tmp2)'; <span class="keyword">end</span>;
+0387     stoppoint = tmp3(1:3,:)./(ones(3,1)*tmp3(4,:)).*axr+axm;
+0388 <span class="comment">%    compute tippoints</span>
+0389     tmp1=X0.*(ones(4,1)*(len1./D))+Xf.*(ones(4,1)*(1-len1./D));
+0390     <span class="keyword">if</span> (oneax), tmp3=invT*tmp1;
+0391     <span class="keyword">else</span>, tmp1=[tmp1;tmp1;tmp1;tmp1]; tmp1=invT.*tmp1;
+0392           tmp2=zeros(4,4); tmp2(:)=tmp1(:);
+0393           tmp3=zeros(4,1); tmp3(:)=sum(tmp2)'; <span class="keyword">end</span>;
+0394     tippoint = tmp3(1:3,:)./(ones(3,1)*tmp3(4,:)).*axr+axm;
+0395 <span class="comment">%    compute basepoints</span>
+0396     tmp1=X0.*(ones(4,1)*(len2./D))+Xf.*(ones(4,1)*(1-len2./D));
+0397     <span class="keyword">if</span> (oneax), tmp3=invT*tmp1;
+0398     <span class="keyword">else</span>, tmp1=[tmp1;tmp1;tmp1;tmp1]; tmp1=invT.*tmp1;
+0399           tmp2=zeros(4,4); tmp2(:)=tmp1(:);
+0400           tmp3=zeros(4,1); tmp3(:)=sum(tmp2)'; <span class="keyword">end</span>;
+0401     basepoint = tmp3(1:3,:)./(ones(3,1)*tmp3(4,:)).*axr+axm;
+0402 <span class="comment">%    compute startpoints</span>
+0403     tmp1=X0.*(ones(4,1)*(1-slen0./D))+Xf.*(ones(4,1)*(slen0./D));
+0404     <span class="keyword">if</span> (oneax), tmp3=invT*tmp1;
+0405     <span class="keyword">else</span>, tmp1=[tmp1;tmp1;tmp1;tmp1]; tmp1=invT.*tmp1;
+0406           tmp2=zeros(4,4); tmp2(:) = tmp1(:);
+0407           tmp3=zeros(4,1); tmp3(:) = sum(tmp2)'; <span class="keyword">end</span>;
+0408     startpoint = tmp3(1:3,:)./(ones(3,1)*tmp3(4,:)).*axr+axm;
+0409 <span class="comment">%    compute stippoints</span>
+0410     tmp1=X0.*(ones(4,1)*(1-slen1./D))+Xf.*(ones(4,1)*(slen1./D));
+0411     <span class="keyword">if</span> (oneax), tmp3=invT*tmp1;
+0412     <span class="keyword">else</span>, tmp1=[tmp1;tmp1;tmp1;tmp1]; tmp1 = invT.*tmp1;
+0413           tmp2=zeros(4,4); tmp2(:)=tmp1(:); 
+0414           tmp3=zeros(4,1); tmp3(:)=sum(tmp2)'; <span class="keyword">end</span>;
+0415     stippoint = tmp3(1:3,:)./(ones(3,1)*tmp3(4,:)).*axr+axm;
+0416 <span class="comment">%    compute sbasepoints</span>
+0417     tmp1=X0.*(ones(4,1)*(1-slen2./D))+Xf.*(ones(4,1)*(slen2./D));
+0418     <span class="keyword">if</span> (oneax), tmp3=invT*tmp1;
+0419     <span class="keyword">else</span>, tmp1=[tmp1;tmp1;tmp1;tmp1]; tmp1=invT.*tmp1;
+0420           tmp2=zeros(4,4); tmp2(:)=tmp1(:);
+0421           tmp3=zeros(4,1); tmp3(:)=sum(tmp2)'; <span class="keyword">end</span>;
+0422     sbasepoint = tmp3(1:3,:)./(ones(3,1)*tmp3(4,:)).*axr+axm;
+0423 
+0424 <span class="comment">% compute cross-arrow directions for arrows with NormalDir specified</span>
+0425 <span class="keyword">if</span> (any(imag(crossdir(:))~=0)),
+0426     ii = find(any(imag(crossdir)~=0));
+0427     crossdir(:,ii) = cross((stop(:,ii)-start(:,ii))./axr(:,ii), <span class="keyword">...</span>
+0428                            imag(crossdir(:,ii))).*axr(:,ii);
+0429 <span class="keyword">end</span>;
+0430 basecross  = crossdir + basepoint;  <span class="comment">% compute cross-arrow directions</span>
+0431 tipcross   = crossdir + tippoint;  sbasecross = crossdir + sbasepoint;
+0432 stipcross  = crossdir + stippoint;
+0433 ii = find(all(crossdir==0)|any(isnan(crossdir)));
+0434 <span class="keyword">if</span> ~isempty(ii),
+0435     numii = length(ii);
+0436     <span class="comment">%    transform start points</span>
+0437         tmp1 = [basepoint(:,ii) tippoint(:,ii) sbasepoint(:,ii) stippoint(:,ii)];
+0438         tmp1 = (tmp1-axm(:,[ii ii ii ii])) ./ axr(:,[ii ii ii ii]);
+0439         tmp1 = [tmp1; ones(1,4*numii)];
+0440         <span class="keyword">if</span> (oneax), X0=T*tmp1;
+0441         <span class="keyword">else</span>, tmp1=[tmp1;tmp1;tmp1;tmp1]; tmp1=T(:,[ii ii ii ii]).*tmp1;
+0442               tmp2=zeros(4,16*numii); tmp2(:)=tmp1(:);
+0443               X0=zeros(4,4*numii); X0(:)=sum(tmp2)'; <span class="keyword">end</span>;
+0444         X0=X0./(ones(4,1)*X0(4,:));
+0445     <span class="comment">%    transform stop points</span>
+0446         tmp1 = [(2*stop(:,ii)-start(:,ii)-axm(:,ii))./axr(:,ii);ones(1,numii)];
+0447         tmp1 = [tmp1 tmp1 tmp1 tmp1];
+0448         <span class="keyword">if</span> (oneax), Xf=T*tmp1;
+0449         <span class="keyword">else</span>, tmp1=[tmp1;tmp1;tmp1;tmp1]; tmp1=T(:,[ii ii ii ii]).*tmp1;
+0450               tmp2=zeros(4,16*numii); tmp2(:)=tmp1(:);
+0451               Xf=zeros(4,4*numii); Xf(:)=sum(tmp2)'; <span class="keyword">end</span>;
+0452         Xf=Xf./(ones(4,1)*Xf(4,:));
+0453     <span class="comment">%    compute perpendicular directions</span>
+0454         pixfact = ((limrange(1,ii)./limrange(2,ii)).*(ap(2,ii)./ap(1,ii))).^2;
+0455         pixfact = [pixfact pixfact pixfact pixfact];
+0456         pixfact = [pixfact;1./pixfact];
+0457         [dummyval,jj] = max(abs(Xf(1:2,:)-X0(1:2,:)));
+0458         jj1 = ((1:4)'*ones(1,length(jj))==ones(4,1)*jj);
+0459         jj2 = ((1:4)'*ones(1,length(jj))==ones(4,1)*(3-jj));
+0460         jj3 = jj1(1:2,:);
+0461         Xp = X0;
+0462         Xp(jj2) = X0(jj2) + ones(sum(jj2(:)),1);
+0463         Xp(jj1) = X0(jj1) - (Xf(jj2)-X0(jj2))./(Xf(jj1)-X0(jj1)) .* pixfact(jj3);
+0464     <span class="comment">%    inverse transform the cross points</span>
+0465         <span class="keyword">if</span> (oneax), Xp=invT*Xp;
+0466         <span class="keyword">else</span>, tmp1=[Xp;Xp;Xp;Xp]; tmp1=invT(:,[ii ii ii ii]).*tmp1;
+0467               tmp2=zeros(4,16*numii); tmp2(:)=tmp1(:);
+0468               Xp=zeros(4,4*numii); Xp(:)=sum(tmp2)'; <span class="keyword">end</span>;
+0469         Xp=(Xp(1:3,:)./(ones(3,1)*Xp(4,:))).*axr(:,[ii ii ii ii])+axm(:,[ii ii ii ii]);
+0470         basecross(:,ii)  = Xp(:,0*numii+(1:numii));
+0471         tipcross(:,ii)   = Xp(:,1*numii+(1:numii));
+0472         sbasecross(:,ii) = Xp(:,2*numii+(1:numii));
+0473         stipcross(:,ii)  = Xp(:,3*numii+(1:numii));
+0474 <span class="keyword">end</span>;
+0475 
+0476 <span class="comment">% compute all points</span>
+0477 <span class="comment">%    compute start points</span>
+0478     axm11 = [axm axm axm axm axm axm axm axm axm axm axm];
+0479     axr11 = [axr axr axr axr axr axr axr axr axr axr axr];
+0480     st = [stoppoint tippoint basepoint sbasepoint stippoint startpoint stippoint sbasepoint basepoint tippoint stoppoint];
+0481     tmp1 = (st - axm11) ./ axr11;
+0482     tmp1 = [tmp1; ones(1,size(tmp1,2))];
+0483     <span class="keyword">if</span> (oneax), X0=T*tmp1;
+0484     <span class="keyword">else</span>, tmp1=[tmp1;tmp1;tmp1;tmp1]; tmp1=[T T T T T T T T T T T].*tmp1;
+0485           tmp2=zeros(4,44); tmp2(:)=tmp1(:);
+0486           X0=zeros(4,11); X0(:)=sum(tmp2)'; <span class="keyword">end</span>;
+0487     X0=X0./(ones(4,1)*X0(4,:));
+0488 <span class="comment">%    compute stop points</span>
+0489     tmp1 = ([start tipcross basecross sbasecross stipcross stop stipcross sbasecross basecross tipcross start] <span class="keyword">...</span>
+0490          - axm11) ./ axr11;
+0491     tmp1 = [tmp1; ones(1,size(tmp1,2))];
+0492     <span class="keyword">if</span> (oneax), Xf=T*tmp1;
+0493     <span class="keyword">else</span>, tmp1=[tmp1;tmp1;tmp1;tmp1]; tmp1=[T T T T T T T T T T T].*tmp1;
+0494           tmp2=zeros(4,44); tmp2(:)=tmp1(:);
+0495           Xf=zeros(4,11); Xf(:)=sum(tmp2)'; <span class="keyword">end</span>;
+0496     Xf=Xf./(ones(4,1)*Xf(4,:));
+0497 <span class="comment">%    compute lengths</span>
+0498     len0  = len.*((ends==1)|(ends==3)).*tan(tipangle/180*pi);
+0499     slen0 = len.*((ends==2)|(ends==3)).*tan(tipangle/180*pi);
+0500     le = [0 len0 wid/2 wid/2 slen0 0 -slen0 -wid/2 -wid/2 -len0 0];
+0501     aprange = ap./limrange;
+0502     aprange = [aprange aprange aprange aprange aprange aprange aprange aprange aprange aprange aprange];
+0503     D = sqrt(sum(((Xf(1:2,:)-X0(1:2,:)).*aprange).^2));
+0504     Dii=find(D==0); <span class="keyword">if</span> ~isempty(Dii), D=D+(D==0); le(Dii)=zeros(1,length(Dii)); <span class="keyword">end</span>; 
+0505     tmp1 = X0.*(ones(4,1)*(1-le./D)) + Xf.*(ones(4,1)*(le./D));
+0506 <span class="comment">%    inverse transform</span>
+0507     <span class="keyword">if</span> (oneax), tmp3=invT*tmp1;
+0508     <span class="keyword">else</span>, tmp1=[tmp1;tmp1;tmp1;tmp1]; tmp1=[invT invT invT invT invT invT invT invT invT invT invT].*tmp1;
+0509           tmp2=zeros(4,44); tmp2(:)=tmp1(:);
+0510           tmp3=zeros(4,11); tmp3(:)=sum(tmp2)'; <span class="keyword">end</span>;
+0511     pts = tmp3(1:3,:)./(ones(3,1)*tmp3(4,:)) .* axr11 + axm11;
+0512 <span class="comment">% correct for ones where the crossdir was specified</span>
+0513 ii = find(~(all(crossdir==0)|any(isnan(crossdir))));
+0514 <span class="keyword">if</span> ~isempty(ii),
+0515     D1 = [pts(:,1+ii)-pts(:,9+ii) pts(:,2+ii)-pts(:,8+ii) <span class="keyword">...</span>
+0516           pts(:,3+ii)-pts(:,7+ii) pts(:,4+ii)-pts(:,6+ii) <span class="keyword">...</span>
+0517           pts(:,6+ii)-pts(:,4+ii) pts(:,7+ii)-pts(:,3+ii) <span class="keyword">...</span>
+0518           pts(:,8+ii)-pts(:,2+ii) pts(:,9+ii)-pts(:,1+ii)]/2;
+0519     ii = ii'*ones(1,8) + ones(length(ii),1)*[1:4 6:9];   ii = ii(:)';
+0520     pts(:,ii) = st(:,ii) + D1;
+0521 <span class="keyword">end</span>;
+0522 <span class="comment">% readjust for reverse directions</span>
+0523 iicols = (1:1)';  iicols = iicols(:,ones(1,11));  iicols = iicols(:).';
+0524 tmp1 = axrev(:,iicols);
+0525 ii = find(tmp1(:)); <span class="keyword">if</span> ~isempty(ii), pts(ii)=-pts(ii); <span class="keyword">end</span>;
+0526 <span class="comment">% readjust for log scale on axes</span>
+0527 tmp1 = xyzlog(:,iicols);
+0528 ii = find(tmp1(:)); <span class="keyword">if</span> ~isempty(ii), pts(ii)=10.^pts(ii); <span class="keyword">end</span>;
+0529 <span class="comment">% compute the x,y,z coordinates of the patches;</span>
+0530 ii = (0:10)' + ones(11,1);
+0531 ii = ii(:)';
+0532 x = zeros(11,1);  y = x;    z = x;
+0533 x(:) = pts(1,ii)';   y(:) = pts(2,ii)';  z(:) = pts(3,ii)';
+0534            <span class="comment">% do the output</span>
+0535   <span class="comment">% % create or modify the patches</span>
+0536 H = 0; 
+0537    <span class="comment">% % make or modify the arrows</span>
+0538 <span class="keyword">if</span> <a href="#_sub5" class="code" title="subfunction [out,is2D] = arrow_is2DXY(ax)">arrow_is2DXY</a>(ax(1)), zz=[]; <span class="keyword">else</span>, zz=z(:,1); <span class="keyword">end</span>;
+0539 xyz = {<span class="string">'XData'</span>,x(:,1),<span class="string">'YData'</span>,y(:,1),<span class="string">'ZData'</span>,zz,<span class="string">'Tag'</span>,ArrowTag};
+0540 H(1) = patch(xyz{:});
+0541   <span class="comment">% % additional properties</span>
+0542 set(H,<span class="string">'Clipping'</span>,<span class="string">'off'</span>);
+0543 set(H,{<span class="string">'UserData'</span>},num2cell(ud,2));
+0544   <span class="comment">% make sure the axis limits did not change</span>
+0545 
+0546 <a name="_sub5" href="#_subfunctions" class="code">function [out,is2D] = arrow_is2DXY(ax)</a>
+0547 <span class="comment">% check if axes are 2-D X-Y plots,  may not work for modified camera angles, etc.</span>
+0548     out = zeros(size(ax)); <span class="comment">% 2-D X-Y plots</span>
+0549     is2D = out;            <span class="comment">% any 2-D plots</span>
+0550     views = get(ax(:),{<span class="string">'View'</span>});
+0551     views = cat(1,views{:});
+0552     out(:) = abs(views(:,2))==90;
+0553     is2D(:) = out(:) | all(rem(views',90)==0)';
+0554 
+0555 <a name="_sub6" href="#_subfunctions" class="code">function out = arrow_WarpToFill(notstretched,manualcamera,curax)</a>
+0556 <span class="comment">% check if we are in &quot;WarpToFill&quot; mode.</span>
+0557     out = strcmp(get(curax,<span class="string">'WarpToFill'</span>),<span class="string">'on'</span>);
+0558     <span class="comment">% 'WarpToFill' is undocumented, so may need to replace this by</span>
+0559     <span class="comment">% out = ~( any(notstretched) &amp; any(manualcamera) );</span></pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

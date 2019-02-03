@@ -1,0 +1,115 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of structcounts</title>
+  <meta name="keywords" content="structcounts">
+  <meta name="description" content="make PS.LOGPS: ps.logps{i}(n) is prior for an i-structure with n clusters">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>structcounts
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>make PS.LOGPS: ps.logps{i}(n) is prior for an i-structure with n clusters</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function ps = structcounts(nobjects, ps) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> make PS.LOGPS: ps.logps{i}(n) is prior for an i-structure with n clusters 
+ We compute these priors in advance and cache them.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="gridpriors.html" class="code" title="function lps = gridpriors(maxn, theta, T, type)">gridpriors</a>	Count number of ways to put objects on a grid or cylinder.</li><li><a href="stirling2.html" class="code" title="function s2 = stirling2 ( n, m )">stirling2</a>	% STIRLING2 computes the Stirling numbers of the second kind.</li><li><a href="sumlogs.html" class="code" title="function L=sumlogs(X)">sumlogs</a>	L = log(sum(exp(X)));</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="runmodel.html" class="code" title="function [ll, graph, names, bestglls, bestgraph] = runmodel(ps, sind,dind, rind, savefile)">runmodel</a>	Given data set DIND, find the best instance of form SIND.</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function ps = structcounts(nobjects, ps)</a>
+0002 
+0003 <span class="comment">% make PS.LOGPS: ps.logps{i}(n) is prior for an i-structure with n clusters</span>
+0004 <span class="comment">% We compute these priors in advance and cache them.</span>
+0005 
+0006 maxn = nobjects;
+0007 <span class="comment">% THETA: parameter for geometric distribution on number of nodes</span>
+0008 theta = ps.theta;
+0009 
+0010 <span class="comment">%    S2(N,M) represents the number of distinct partitions of N elements</span>
+0011 <span class="comment">%    into M nonempty sets.</span>
+0012 s2 = <a href="stirling2.html" class="code" title="function s2 = stirling2 ( n, m )">stirling2</a>(maxn,maxn);
+0013 
+0014 <span class="keyword">for</span> i = 1:maxn
+0015   F(i) = factorial(i);
+0016 <span class="keyword">end</span>
+0017 
+0018 <span class="comment">% T(n,k): number of ways to put n elements into k parcels</span>
+0019 ps.T = repmat(F, maxn, 1).*s2;
+0020 
+0021 <span class="comment">% counts(i, n) is number of architectures of type i with n labelled clusters.</span>
+0022 <span class="comment">% architecture specifies where cluster nodes go but not what they contain</span>
+0023 
+0024 <span class="comment">% partition, connected</span>
+0025 counts(1,:) = zeros(1, maxn);
+0026 <span class="comment">% chain</span>
+0027 counts(2,:) = gammaln( (1:maxn) +1) - log(2);
+0028 counts(2, 1) = 0;
+0029 <span class="comment">% ring</span>
+0030 counts(3,:) = gammaln(1:maxn) - log(2);
+0031 counts(3, 1:2) = [0,0];
+0032 <span class="comment">% unrooted tree</span>
+0033 counts(4,2:end) = gammaln( (2:maxn)-1.5) + ((2:maxn)-2)*log(2)-0.5*log(pi) ;
+0034 counts(4,1) = 0;
+0035 <span class="comment">% hierarchy unrooted</span>
+0036 counts(5,:) = ((1:maxn)-2).*log(1:maxn); 
+0037 <span class="comment">% rooted hierarchy</span>
+0038 counts(6,:) = ((1:maxn)-1).*log(1:maxn); 
+0039 <span class="comment">% dirchain</span>
+0040 counts(7,:) = gammaln((1:maxn)+1); 
+0041 <span class="comment">% dirring</span>
+0042 counts(8,:) = gammaln(1:maxn); 
+0043 
+0044 logcounts = counts;
+0045 
+0046 <span class="comment">% we choose among all structures where each dimension contains no holes (but</span>
+0047 <span class="comment">% multiple objects can end up at the same node). Each structure is weighted</span>
+0048 <span class="comment">% according to the number of nodes it contains.</span>
+0049 
+0050 <span class="comment">% consider the number of ways to partition the objects into each ncluster</span>
+0051 logclustercounts = log(s2(maxn,:));
+0052 
+0053 <span class="comment">% combine npartitions with narchitectures to get number of structures</span>
+0054 logcounts = logcounts + repmat(logclustercounts, 8,1);
+0055 logweights = log(theta) + (1:maxn)*log(1-theta);
+0056 
+0057 <span class="keyword">for</span> i = 1:8
+0058   totsums(i) = <a href="sumlogs.html" class="code" title="function L=sumlogs(X)">sumlogs</a>(logweights + logcounts(i,:));
+0059 <span class="keyword">end</span>
+0060 lcs = repmat(logweights, 8,1) - repmat(totsums', 1,maxn);
+0061 
+0062 <span class="keyword">for</span> i = 1:8
+0063   logcs{i} = lcs(i,:);
+0064 <span class="keyword">end</span>
+0065 logcs{9} = <a href="gridpriors.html" class="code" title="function lps = gridpriors(maxn, theta, T, type)">gridpriors</a>(maxn, theta, ps.T, <span class="string">'grid'</span>);
+0066 logcs{10} = <a href="gridpriors.html" class="code" title="function lps = gridpriors(maxn, theta, T, type)">gridpriors</a>(maxn, theta, ps.T, <span class="string">'cylinder'</span>);
+0067 ps.logps= logcs;
+0068</pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

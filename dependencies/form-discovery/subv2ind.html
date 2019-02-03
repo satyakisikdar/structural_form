@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of subv2ind</title>
+  <meta name="keywords" content="subv2ind">
+  <meta name="description" content="SUBV2IND Like the built-in sub2ind, but the subscripts are given as row vectors.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>subv2ind
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>SUBV2IND Like the built-in sub2ind, but the subscripts are given as row vectors.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function ndx = subv2ind(siz, subv) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> SUBV2IND Like the built-in sub2ind, but the subscripts are given as row vectors.
+ ind = subv2ind(siz,subv)
+
+ siz can be a row or column vector of size d.
+ subv should be a collection of N row vectors of size d.
+ ind will be of size N * 1.
+
+ Example:
+ subv = [1 1 1;
+         2 1 1;
+         ...
+         2 2 2];
+ subv2ind([2 2 2], subv) returns [1 2 ... 8]'
+ i.e., the leftmost digit toggles fastest.
+
+ See also IND2SUBV.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="combinegraphs.html" class="code" title="function graph = combinegraphs(graph, ps, varargin)">combinegraphs</a>	create direct product of components in graph.</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function d = bitv2dec(bits)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function ndx = subv2ind(siz, subv)</a>
+0002 <span class="comment">% SUBV2IND Like the built-in sub2ind, but the subscripts are given as row vectors.</span>
+0003 <span class="comment">% ind = subv2ind(siz,subv)</span>
+0004 <span class="comment">%</span>
+0005 <span class="comment">% siz can be a row or column vector of size d.</span>
+0006 <span class="comment">% subv should be a collection of N row vectors of size d.</span>
+0007 <span class="comment">% ind will be of size N * 1.</span>
+0008 <span class="comment">%</span>
+0009 <span class="comment">% Example:</span>
+0010 <span class="comment">% subv = [1 1 1;</span>
+0011 <span class="comment">%         2 1 1;</span>
+0012 <span class="comment">%         ...</span>
+0013 <span class="comment">%         2 2 2];</span>
+0014 <span class="comment">% subv2ind([2 2 2], subv) returns [1 2 ... 8]'</span>
+0015 <span class="comment">% i.e., the leftmost digit toggles fastest.</span>
+0016 <span class="comment">%</span>
+0017 <span class="comment">% See also IND2SUBV.</span>
+0018 
+0019 
+0020 <span class="keyword">if</span> isempty(subv)
+0021   ndx = [];
+0022   <span class="keyword">return</span>;
+0023 <span class="keyword">end</span>
+0024 
+0025 <span class="keyword">if</span> isempty(siz)
+0026   ndx = 1;
+0027   <span class="keyword">return</span>;
+0028 <span class="keyword">end</span>
+0029 
+0030 [ncases ndims] = size(subv);
+0031 
+0032 <span class="comment">%if length(siz) ~= ndims</span>
+0033 <span class="comment">%  error('length of subscript vector and sizes must be equal');</span>
+0034 <span class="comment">%end</span>
+0035 
+0036 <span class="keyword">if</span> all(siz==2)
+0037   <span class="comment">%rbits = subv(:,end:-1:1)-1; % read from right to left, convert to 0s/1s</span>
+0038   <span class="comment">%ndx = bitv2dec(rbits)+1;</span>
+0039   twos = pow2(0:ndims-1);
+0040   ndx = ((subv-1) * twos(:)) + 1;
+0041   <span class="comment">%ndx = sum((subv-1) .* twos(ones(ncases,1), :), 2) + 1; % equivalent to matrix * vector</span>
+0042   <span class="comment">%ndx = sum((subv-1) .* repmat(twos, ncases, 1), 2) + 1; % much slower than ones</span>
+0043   <span class="comment">%ndx = ndx(:)';</span>
+0044 <span class="keyword">else</span>
+0045   <span class="comment">%siz = siz(:)';</span>
+0046   cp = [1 cumprod(siz(1:end-1))]';
+0047   <span class="comment">%ndx = ones(ncases, 1);</span>
+0048   <span class="comment">%for i = 1:ndims</span>
+0049   <span class="comment">%  ndx = ndx + (subv(:,i)-1)*cp(i);</span>
+0050   <span class="comment">%end</span>
+0051   ndx = (subv-1)*cp + 1;
+0052 <span class="keyword">end</span>
+0053 
+0054 <span class="comment">%%%%%%%%%%%</span>
+0055 
+0056 <a name="_sub1" href="#_subfunctions" class="code">function d = bitv2dec(bits)</a>
+0057 <span class="comment">% BITV2DEC Convert a bit vector to a decimal integer</span>
+0058 <span class="comment">% d = butv2dec(bits)</span>
+0059 <span class="comment">%</span>
+0060 <span class="comment">% This is just like the built-in bin2dec, except the argument is a vector, not a string.</span>
+0061 <span class="comment">% If bits is an array, each row will be converted.</span>
+0062 
+0063 [m n] = size(bits);
+0064 twos = pow2(n-1:-1:0);
+0065 d = sum(bits .* twos(ones(m,1),:),2);
+0066</pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of dijkstra</title>
+  <meta name="keywords" content="dijkstra">
+  <meta name="description" content="DIJK Shortest paths from nodes 's' to nodes 't' using Dijkstra algorithm.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>dijkstra
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>DIJK Shortest paths from nodes 's' to nodes 't' using Dijkstra algorithm.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [D,P] = dijk(A,s,t) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">DIJK Shortest paths from nodes 's' to nodes 't' using Dijkstra algorithm.
+ [D,p] = dijk(A,s,t)
+     A = n x n node-node weighted adjacency matrix of arc lengths
+         (Note: A(i,j) = 0   =&gt; Arc (i,j) does not exist;
+                A(i,j) = NaN =&gt; Arc (i,j) exists with 0 weight)
+     s = FROM node indices
+       = [] (default), paths from all nodes
+     t = TO node indices
+       = [] (default), paths to all nodes
+     D = |s| x |t| matrix of shortest path distances from 's' to 't'
+       = [D(i,j)], where D(i,j) = distance from node 'i' to node 'j' 
+     P = |s| x n matrix of predecessor indices, where P(i,j) is the
+         index of the predecessor to node 'j' on the path from 's(i)' to 'j'
+         (use PRED2PATH to convert P to paths)
+       = path from 's' to 't', if |s| = |t| = 1
+
+  (If A is a triangular matrix, then computationally intensive node
+   selection step not needed since graph is acyclic (triangularity is a 
+   sufficient, but not a necessary, condition for a graph to be acyclic)
+   and A can have non-negative elements)
+
+  (If |s| &gt;&gt; |t|, then DIJK is faster if DIJK(A',t,s) used, where D is now
+   transposed and P now represents successor indices)
+
+  (Based on Fig. 4.6 in Ahuja, Magnanti, and Orlin, Network Flows,
+   Prentice-Hall, 1993, p. 109.)</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="collapsedims.html" class="code" title="function [graph currscore overallchange nearmscores nearmgraphs] =collapsedims(graph, data, ps, epsilon, currscore,overallchange, loopmax, nearmscores, nearmgraphs, varargin);">collapsedims</a>	take graph with multiple components and squeeze out dimensions wherever</li><li><a href="swapobjclust.html" class="code" title="function [graph currscore overallchange nearmscores nearmgraphs] =swapobjclust(graph, data, ps, comp, epsilon, currscore,overallchange, loopmax, nearmscores, nearmgraphs, varargin);">swapobjclust</a>	Try improving GRAPH by swapping clusters or individual objects</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [D,P] = dijk(A,s,t)</a>
+0002 <span class="comment">%DIJK Shortest paths from nodes 's' to nodes 't' using Dijkstra algorithm.</span>
+0003 <span class="comment">% [D,p] = dijk(A,s,t)</span>
+0004 <span class="comment">%     A = n x n node-node weighted adjacency matrix of arc lengths</span>
+0005 <span class="comment">%         (Note: A(i,j) = 0   =&gt; Arc (i,j) does not exist;</span>
+0006 <span class="comment">%                A(i,j) = NaN =&gt; Arc (i,j) exists with 0 weight)</span>
+0007 <span class="comment">%     s = FROM node indices</span>
+0008 <span class="comment">%       = [] (default), paths from all nodes</span>
+0009 <span class="comment">%     t = TO node indices</span>
+0010 <span class="comment">%       = [] (default), paths to all nodes</span>
+0011 <span class="comment">%     D = |s| x |t| matrix of shortest path distances from 's' to 't'</span>
+0012 <span class="comment">%       = [D(i,j)], where D(i,j) = distance from node 'i' to node 'j'</span>
+0013 <span class="comment">%     P = |s| x n matrix of predecessor indices, where P(i,j) is the</span>
+0014 <span class="comment">%         index of the predecessor to node 'j' on the path from 's(i)' to 'j'</span>
+0015 <span class="comment">%         (use PRED2PATH to convert P to paths)</span>
+0016 <span class="comment">%       = path from 's' to 't', if |s| = |t| = 1</span>
+0017 <span class="comment">%</span>
+0018 <span class="comment">%  (If A is a triangular matrix, then computationally intensive node</span>
+0019 <span class="comment">%   selection step not needed since graph is acyclic (triangularity is a</span>
+0020 <span class="comment">%   sufficient, but not a necessary, condition for a graph to be acyclic)</span>
+0021 <span class="comment">%   and A can have non-negative elements)</span>
+0022 <span class="comment">%</span>
+0023 <span class="comment">%  (If |s| &gt;&gt; |t|, then DIJK is faster if DIJK(A',t,s) used, where D is now</span>
+0024 <span class="comment">%   transposed and P now represents successor indices)</span>
+0025 <span class="comment">%</span>
+0026 <span class="comment">%  (Based on Fig. 4.6 in Ahuja, Magnanti, and Orlin, Network Flows,</span>
+0027 <span class="comment">%   Prentice-Hall, 1993, p. 109.)</span>
+0028 
+0029 <span class="comment">% Copyright (c) 1998-2001 by Michael G. Kay</span>
+0030 <span class="comment">% Matlog Version 5 22-Aug-2001</span>
+0031 
+0032 <span class="comment">% Input Error Checking ******************************************************</span>
+0033 error(nargchk(1,3,nargin));
+0034 
+0035 [n,cA] = size(A);
+0036 
+0037 <span class="keyword">if</span> nargin &lt; 2 | isempty(s), s = (1:n)'; <span class="keyword">else</span> s = s(:); <span class="keyword">end</span>
+0038 <span class="keyword">if</span> nargin &lt; 3 | isempty(t), t = (1:n)'; <span class="keyword">else</span> t = t(:); <span class="keyword">end</span>
+0039 
+0040 <span class="keyword">if</span> ~any(any(tril(A) ~= 0))       <span class="comment">% A is upper triangular</span>
+0041    isAcyclic = 1;
+0042 <span class="keyword">elseif</span> ~any(any(triu(A) ~= 0))   <span class="comment">% A is lower triangular</span>
+0043    isAcyclic = 2;
+0044 <span class="keyword">else</span>                             <span class="comment">% Graph may not be acyclic</span>
+0045    isAcyclic = 0;
+0046 <span class="keyword">end</span>
+0047 
+0048 <span class="keyword">if</span> n ~= cA
+0049    error(<span class="string">'A must be a square matrix'</span>);
+0050 <span class="keyword">elseif</span> ~isAcyclic &amp; any(any(A &lt; 0))
+0051    error(<span class="string">'A must be non-negative'</span>);
+0052 <span class="keyword">elseif</span> any(s &lt; 1 | s &gt; n)
+0053    error([<span class="string">'''s'' must be an integer between 1 and '</span>,num2str(n)]);
+0054 <span class="keyword">elseif</span> any(t &lt; 1 | t &gt; n)
+0055    error([<span class="string">'''t'' must be an integer between 1 and '</span>,num2str(n)]);
+0056 <span class="keyword">end</span>
+0057 <span class="comment">% End (Input Error Checking) ************************************************</span>
+0058 
+0059 A = A';    <span class="comment">% Use transpose to speed-up FIND for sparse A</span>
+0060 
+0061 D = zeros(length(s),length(t));
+0062 <span class="keyword">if</span> nargout &gt; 1, P = zeros(length(s),n); <span class="keyword">end</span>
+0063 
+0064 <span class="keyword">for</span> i = 1:length(s)
+0065    j = s(i);
+0066    
+0067    Di = Inf*ones(n,1); Di(j) = 0;
+0068    
+0069    isLab = logical(zeros(length(t),1));
+0070    <span class="keyword">if</span> isAcyclic ==  1
+0071       nLab = j - 1;
+0072    <span class="keyword">elseif</span> isAcyclic == 2
+0073       nLab = n - j;
+0074    <span class="keyword">else</span>
+0075       nLab = 0;
+0076       UnLab = 1:n;
+0077       isUnLab = logical(ones(n,1));
+0078    <span class="keyword">end</span>
+0079    
+0080    <span class="keyword">while</span> nLab &lt; n &amp; ~all(isLab)
+0081       <span class="keyword">if</span> isAcyclic
+0082          Dj = Di(j);
+0083       <span class="keyword">else</span>    <span class="comment">% Node selection</span>
+0084          [Dj,jj] = min(Di(isUnLab));
+0085          j = UnLab(jj);
+0086          UnLab(jj) = [];
+0087          isUnLab(j) = 0;
+0088       <span class="keyword">end</span>
+0089       
+0090       nLab = nLab + 1;
+0091       <span class="keyword">if</span> length(t) &lt; n, isLab = isLab | (j == t); <span class="keyword">end</span>
+0092       
+0093       [jA,kA,Aj] = find(A(:,j));
+0094       Aj(isnan(Aj)) = 0;
+0095             
+0096       <span class="keyword">if</span> isempty(Aj), Dk = Inf; <span class="keyword">else</span> Dk = Dj + Aj; <span class="keyword">end</span>
+0097       
+0098       <span class="keyword">if</span> nargout &gt; 1, P(i,jA(Dk &lt; Di(jA))) = j; <span class="keyword">end</span>
+0099       Di(jA) = min(Di(jA),Dk);
+0100       
+0101       <span class="keyword">if</span> isAcyclic == 1       <span class="comment">% Increment node index for upper triangular A</span>
+0102          j = j + 1;
+0103       <span class="keyword">elseif</span> isAcyclic == 2   <span class="comment">% Decrement node index for lower triangular A</span>
+0104          j = j - 1;
+0105       <span class="keyword">end</span>
+0106    <span class="keyword">end</span>
+0107    D(i,:) = Di(t)';
+0108 <span class="keyword">end</span>
+0109 
+0110 <span class="keyword">if</span> nargout &gt; 1 &amp; length(s) == 1 &amp; length(t) == 1
+0111    P = pred2path(P,s,t);
+0112 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

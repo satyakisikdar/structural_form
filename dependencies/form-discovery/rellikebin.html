@@ -1,0 +1,87 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of rellikebin</title>
+  <meta name="keywords" content="rellikebin">
+  <meta name="description" content="Compute probability of the data under the model for binary relations.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>rellikebin
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Compute probability of the data under the model for binary relations.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function ll = rellikebin(countvec, adjvec, sizevec, mags, thetas) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Compute probability of the data under the model for binary relations.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="bbloglike.html" class="code" title="function ll=bbloglike(alpha, beta, ns, ys)">bbloglike</a>	function ll=loglike(alpha, beta, ns, ys)</li><li><a href="meanlogs.html" class="code" title="function L=meanlogs(X)">meanlogs</a>	L = log(sum(exp(X)));</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="graph_like_rel.html" class="code" title="function [logI graph] = graph_like_rel(data, graph, ps)">graph_like_rel</a>	graph_like_rel(data, adj, beta, sigma): compute log p(DATA|GRAPH), where</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function ll = rellikebin(countvec, adjvec, sizevec, mags, thetas)</a>
+0002 
+0003 <span class="comment">% Compute probability of the data under the model for binary relations.</span>
+0004 
+0005 <span class="comment">%   MAGS: sum of hyperparameters</span>
+0006 <span class="comment">% THETAS: proportion of 1s</span>
+0007 
+0008 <span class="comment">% zs(i): zeroscore. sum_m p(C_0|\theta_i, m)p(m)</span>
+0009 <span class="comment">% os(i): onescore.  sum_m p(C_1|\theta_i, m)p(m)</span>
+0010 
+0011 <span class="comment">% matrices: (mags, thetas)</span>
+0012 magsmat   = repmat(mags, 1, length(thetas));
+0013 thetasmat = repmat(thetas', length(mags), 1);
+0014 alphasmat = thetasmat.*magsmat;
+0015 betasmat  = magsmat - alphasmat;
+0016 alphas = alphasmat(:); betas = betasmat(:); hypcount = length(alphas);
+0017 
+0018 vals = [0 1];
+0019 <span class="keyword">for</span> vind = 1:length(vals)
+0020   v = vals(vind);
+0021   ys = countvec(adjvec==v); ns = sizevec(adjvec==v); dcount = length(ys);
+0022   <span class="keyword">if</span> isempty(ys)
+0023     llsmat{vind} = 0*magsmat;
+0024   <span class="keyword">else</span>
+0025     allys = repmat(ys, 1, hypcount); allns = repmat(ns, 1, hypcount);
+0026     allalphas = repmat(alphas', dcount,1); 
+0027     allbetas = repmat(betas', dcount, 1);
+0028     lls = <a href="bbloglike.html" class="code" title="function ll=bbloglike(alpha, beta, ns, ys)">bbloglike</a>(allalphas, allbetas, allns, allys);
+0029     llsmat{vind} = reshape(lls, size(alphasmat));
+0030   <span class="keyword">end</span>
+0031 <span class="keyword">end</span>
+0032 <span class="keyword">for</span> i = 1:size(llsmat{1},2)
+0033   zs(i) = <a href="meanlogs.html" class="code" title="function L=meanlogs(X)">meanlogs</a>(llsmat{1}(:,i));
+0034   os(i) = <a href="meanlogs.html" class="code" title="function L=meanlogs(X)">meanlogs</a>(llsmat{2}(:,i));
+0035 <span class="keyword">end</span>
+0036 
+0037 
+0038 [zind oind] = find(triu(ones(length(zs))));
+0039 <span class="comment">% compute mean p(C|S, \theta0, \theta1)</span>
+0040 lls = zs(zind)+os(oind);
+0041 ll = <a href="meanlogs.html" class="code" title="function L=meanlogs(X)">meanlogs</a>(lls);</pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

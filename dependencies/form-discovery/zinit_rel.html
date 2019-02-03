@@ -1,0 +1,73 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of zinit_rel</title>
+  <meta name="keywords" content="zinit_rel">
+  <meta name="description" content="Pull out results on partitionnoself to initialize searches for relational">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>zinit_rel
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Pull out results on partitionnoself to initialize searches for relational</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>This is a script file. </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Pull out results on partitionnoself to initialize searches for relational
+ structures</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="defaultps.html" class="code" title="function ps = defaultps(ps)">defaultps</a>	Default settings of all parameters</li><li><a href="setps.html" class="code" title="function ps = setps()">setps</a>	</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <span class="comment">% Pull out results on partitionnoself to initialize searches for relational</span>
+0002 <span class="comment">% structures</span>
+0003 
+0004 masterfile    = <span class="string">'resultsdemo.mat'</span>;
+0005 thisdata = [17:20];
+0006 ps = <a href="setps.html" class="code" title="function ps = setps()">setps</a>;
+0007 <a href="defaultps.html" class="code" title="function ps = defaultps(ps)">defaultps</a>(ps);
+0008 
+0009 relinitdir = ps.relinitdir;
+0010 currdir = pwd;
+0011 
+0012 load(masterfile);
+0013 <span class="keyword">for</span> i = thisdata
+0014   cd(irmdatadir);
+0015   modellike(modellike==0) = -inf;
+0016   [m,mind]=max(modellike(9,i,:));
+0017   <span class="keyword">if</span> isinf(m)
+0018     error(<span class="string">'no results for partitionnoself'</span>);
+0019   <span class="keyword">end</span>
+0020   g = structure{9,i,mind};
+0021   bestz = g.z;
+0022   fid = fopen([ps.data{i}, <span class="string">'_bestz'</span>], <span class="string">'w'</span>);
+0023   fprintf(fid, <span class="string">'%d '</span>, bestz);
+0024   fclose(fid);
+0025   cd(currdir)
+0026 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

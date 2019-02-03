@@ -1,0 +1,135 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of collapsedims</title>
+  <meta name="keywords" content="collapsedims">
+  <meta name="description" content="take graph with multiple components and squeeze out dimensions wherever">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>collapsedims
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>take graph with multiple components and squeeze out dimensions wherever</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [graph currscore overallchange nearmscores nearmgraphs] =collapsedims(graph, data, ps, epsilon, currscore,overallchange, loopmax, nearmscores, nearmgraphs, varargin); </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> take graph with multiple components and squeeze out dimensions wherever
+ possible (move objects to the nearest possible vacant nodes)</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="addnearmiss.html" class="code" title="function [nearmscores nearmgraphs] = addnearmiss(nearmscores, nearmgraphs,graph, score, currgraph, currscore, epsilon)">addnearmiss</a>	Add GRAPH to NEARMGRAPHS -- the list of "near miss graphs"</li><li><a href="combinegraphs.html" class="code" title="function graph = combinegraphs(graph, ps, varargin)">combinegraphs</a>	create direct product of components in graph.</li><li><a href="dijkstra.html" class="code" title="function [D,P] = dijk(A,s,t)">dijkstra</a>	DIJK Shortest paths from nodes 's' to nodes 't' using Dijkstra algorithm.</li><li><a href="graph_like.html" class="code" title="function [logI graph] = graph_like(data, graph, ps)">graph_like</a>	graph_like(data, adj, beta, sigma): compute log p(DATA|GRAPH)</li><li><a href="graph_prior.html" class="code" title="function gp = graph_prior(graph, ps)">graph_prior</a>	Compute prior on graph GRAPH.</li><li><a href="simplify_graph.html" class="code" title="function graph = simplify_graph(graph, ps)">simplify_graph</a>	Try cleaning up GRAPH by removing unnecessary cluster nodes.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="gibbs_clean.html" class="code" title="function [ll graph] = gibbs_clean(graph, data, ps, varargin)">gibbs_clean</a>	SWAPTYPES: which swaps to include</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function [occ unocc] = getocc(graph, compind, j)</a></li><li><a href="#_sub2" class="code">function occnodescomp = get_occnodescomp(graph, i);</a></li><li><a href="#_sub3" class="code">function graph = zassign(zjinst, newnode, graph, compind, j, ps)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [graph currscore overallchange nearmscores nearmgraphs] = </a><span class="keyword">...</span>
+0002         collapsedims(graph, data, ps, epsilon, currscore, <span class="keyword">...</span>
+0003          overallchange, loopmax, nearmscores, nearmgraphs, varargin); 
+0004 
+0005 <span class="comment">% take graph with multiple components and squeeze out dimensions wherever</span>
+0006 <span class="comment">% possible (move objects to the nearest possible vacant nodes)</span>
+0007 
+0008 args      = varargin;
+0009 debug     = 0;
+0010 <span class="keyword">for</span> i=1:2:length(args)
+0011   <span class="keyword">switch</span> args{i}
+0012    <span class="keyword">case</span> <span class="string">'debug'</span>,      debug   = args{i+1};     
+0013   <span class="keyword">end</span>
+0014 <span class="keyword">end</span>
+0015 
+0016 nmissflag = length(nearmscores) &gt; 0;
+0017 
+0018 change = 1; loopcount = 0;
+0019 <span class="keyword">while</span> (change &amp;&amp; loopcount &lt; loopmax) 
+0020   change = 0; loopcount = loopcount+1;
+0021   <span class="keyword">if</span> loopcount == loopmax 
+0022     disp(<span class="string">'loopcount exceeded in gibbs_clean: collapsedims'</span>);
+0023   <span class="keyword">end</span>
+0024   ds = <a href="dijkstra.html" class="code" title="function [D,P] = dijk(A,s,t)">dijkstra</a>(graph.Wclustersym);
+0025   <span class="keyword">for</span> i=1:graph.ncomp
+0026     <span class="comment">% occupied nodes for this component</span>
+0027     occnodescomp = <a href="#_sub2" class="code" title="subfunction occnodescomp = get_occnodescomp(graph, i);">get_occnodescomp</a>(graph, i);
+0028     <span class="keyword">for</span> jind = 1:length(occnodescomp) 
+0029       <span class="keyword">if</span> jind &gt; length(occnodescomp) <span class="keyword">continue</span>; <span class="keyword">end</span>
+0030       j = occnodescomp(jind);
+0031       testgraph = graph;
+0032       [occ, unocc] = <a href="#_sub1" class="code" title="subfunction [occ unocc] = getocc(graph, compind, j)">getocc</a>(testgraph, i, j);
+0033       zj = occ(find(testgraph.compinds(occ,i)==j));
+0034       <span class="keyword">if</span> length(zj) &lt;= length(unocc)
+0035         rp = randperm(length(zj));
+0036     zj = zj(rp);
+0037     <span class="keyword">for</span> zjinst = zj 
+0038       [m mind] = min(ds(zjinst,unocc));
+0039           testgraph = <a href="#_sub3" class="code" title="subfunction graph = zassign(zjinst, newnode, graph, compind, j, ps)">zassign</a>(zjinst, unocc(mind), testgraph, i, j); 
+0040       unocc = setdiff(unocc, unocc(mind));
+0041         <span class="keyword">end</span>
+0042     testgraph = <a href="combinegraphs.html" class="code" title="function graph = combinegraphs(graph, ps, varargin)">combinegraphs</a>(testgraph, ps, <span class="string">'zonly'</span>, 1);
+0043         testgraph = <a href="simplify_graph.html" class="code" title="function graph = simplify_graph(graph, ps)">simplify_graph</a>(testgraph, ps);
+0044         [testscore, newgraph]=<a href="graph_like.html" class="code" title="function [logI graph] = graph_like(data, graph, ps)">graph_like</a>(data, testgraph, ps);
+0045         testscore = testscore + <a href="graph_prior.html" class="code" title="function gp = graph_prior(graph, ps)">graph_prior</a>(testgraph, ps);
+0046         <span class="keyword">if</span> testscore -  currscore  &gt; epsilon
+0047           <span class="keyword">if</span> debug keyboard; <span class="keyword">end</span>
+0048           change = 1; overallchange = 1;
+0049           graph = testgraph; currscore = testscore;
+0050           occnodescomp = <a href="#_sub2" class="code" title="subfunction occnodescomp = get_occnodescomp(graph, i);">get_occnodescomp</a>(graph, i);
+0051         <span class="keyword">elseif</span> nmissflag <span class="comment">% add graph to list of nearmisses</span>
+0052           <span class="keyword">if</span> testscore &gt; nearmscores(end)
+0053             [nearmscores nearmgraphs]=<a href="addnearmiss.html" class="code" title="function [nearmscores nearmgraphs] = addnearmiss(nearmscores, nearmgraphs,graph, score, currgraph, currscore, epsilon)">addnearmiss</a>(nearmscores, nearmgraphs,<span class="keyword">...</span>
+0054         testgraph, testscore, graph, currscore, epsilon);
+0055           <span class="keyword">end</span>
+0056         <span class="keyword">end</span>
+0057       <span class="keyword">end</span>
+0058     <span class="keyword">end</span>
+0059   <span class="keyword">end</span>
+0060 <span class="keyword">end</span>
+0061 
+0062 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0063 <span class="comment">% get occupied and unoccupied nodes</span>
+0064 <a name="_sub1" href="#_subfunctions" class="code">function [occ unocc] = getocc(graph, compind, j)</a>
+0065 
+0066 occ = unique(graph.z); 
+0067 unocc = setdiff(1:size(graph.Wcluster,1), occ);
+0068 <span class="comment">% empty nodes with value j on COMPIND are no good</span>
+0069 unocc = setdiff(unocc, find(graph.compinds(:, compind) == j));
+0070 
+0071 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0072 <span class="comment">% get occupied and unoccupied nodes</span>
+0073 
+0074 <a name="_sub2" href="#_subfunctions" class="code">function occnodescomp = get_occnodescomp(graph, i);</a>
+0075 occnodescomp = unique(graph.components{i}.z);
+0076 
+0077 
+0078 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0079 <span class="comment">% move zjinst to newnode in graph</span>
+0080 <a name="_sub3" href="#_subfunctions" class="code">function graph = zassign(zjinst, newnode, graph, compind, j, ps)</a>
+0081  
+0082 objind = find(graph.z == zjinst);
+0083 <span class="keyword">for</span> i = 1:graph.ncomp
+0084   graph.components{i}.z(objind) = graph.compinds(newnode,i);
+0085 <span class="keyword">end</span>
+0086</pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

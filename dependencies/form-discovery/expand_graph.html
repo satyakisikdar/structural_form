@@ -1,0 +1,76 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of expand_graph</title>
+  <meta name="keywords" content="expand_graph">
+  <meta name="description" content="ADJ: a graph over clusters.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>expand_graph
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>ADJ: a graph over clusters.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [newadj, objcount]=expand_graph(adj, zs, type) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> ADJ: a graph over clusters.
+ NEWADJ: a graph over objects and clusters. Created by hanging objects
+ off ADJ according to the cluster assignments in ZS</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="makeemptygraph.html" class="code" title="function graph  = makeemptygraph(ps)">makeemptygraph</a>	Make a graph with one cluster and no objects.</li><li><a href="relgraphinit.html" class="code" title="function graph = relgraphinit(data, z, ps)">relgraphinit</a>	Create initial graph for relational data set DATA by using various</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [newadj, objcount]=expand_graph(adj, zs, type)</a>
+0002 
+0003 <span class="comment">% ADJ: a graph over clusters.</span>
+0004 <span class="comment">% NEWADJ: a graph over objects and clusters. Created by hanging objects</span>
+0005 <span class="comment">% off ADJ according to the cluster assignments in ZS</span>
+0006 
+0007 
+0008 <span class="keyword">if</span> size(adj,1)~=size(adj,2)
+0009     error(<span class="string">'expand_graph: adj must be square'</span>);
+0010   <span class="keyword">elseif</span> size(adj,1) ~= length(zs)
+0011    error(<span class="string">'expand_graph: adj inconsistent with zs'</span>);
+0012 <span class="keyword">end</span>
+0013   
+0014   nclust = size(adj,1);
+0015   objcount = 0;
+0016   <span class="keyword">for</span> i=1:length(zs)
+0017     objcount = objcount + length(zs{i});
+0018   <span class="keyword">end</span>
+0019 
+0020 newadj = zeros(objcount+nclust);
+0021 newadj(objcount+1:objcount+nclust, objcount+1:objcount+nclust)=adj;
+0022 
+0023 <span class="comment">%% hang objects off nodes of adj according to zs (assignments)</span>
+0024 <span class="keyword">for</span> i=1:length(zs)
+0025   <span class="comment">% now directed</span>
+0026   <span class="comment">% newadj(zs{i},objcount+i)  = 1;</span>
+0027   newadj(objcount+i, zs{i}) = 1;
+0028 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

@@ -1,0 +1,291 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of runmodel</title>
+  <meta name="keywords" content="runmodel">
+  <meta name="description" content="Given data set DIND, find the best instance of form SIND.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>runmodel
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Given data set DIND, find the best instance of form SIND.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [ll, graph, names, bestglls, bestgraph] = runmodel(ps, sind,dind, rind, savefile) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Given data set DIND, find the best instance of form SIND. 
+   PS:          parameter structure with hyperparameters, etc
+   RIND:     which repeat is this?
+   SAVEFILE: where to save interim results
+ Output:
+   LL:           log probability of the best structure found
+   GRAPH:     the best structure found
+   BESTGLLS:  log probabilities of the structures explored along the way
+   BESTGRAPH: structures explored along the way</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="combinegraphs.html" class="code" title="function graph = combinegraphs(graph, ps, varargin)">combinegraphs</a>	create direct product of components in graph.</li><li><a href="draw_dot.html" class="code" title="function [xret, yret, labels] = draw_dot(adj, labels, varargin);">draw_dot</a>	</li><li><a href="graph_like.html" class="code" title="function [logI graph] = graph_like(data, graph, ps)">graph_like</a>	graph_like(data, adj, beta, sigma): compute log p(DATA|GRAPH)</li><li><a href="graph_prior.html" class="code" title="function gp = graph_prior(graph, ps)">graph_prior</a>	Compute prior on graph GRAPH.</li><li><a href="relgraphinit.html" class="code" title="function graph = relgraphinit(data, z, ps)">relgraphinit</a>	Create initial graph for relational data set DATA by using various</li><li><a href="runmodel.html" class="code" title="function [ll, graph, names, bestglls, bestgraph] = runmodel(ps, sind,dind, rind, savefile)">runmodel</a>	Given data set DIND, find the best instance of form SIND.</li><li><a href="scaledata.html" class="code" title="function [data  ps]= scaledata(data, ps)">scaledata</a>	scale the data according to several strategies</li><li><a href="setrunps.html" class="code" title="function [nobjects, ps]=setrunps(data, dind, ps)">setrunps</a>	initialize runps component of ps</li><li><a href="simplify_graph.html" class="code" title="function graph = simplify_graph(graph, ps)">simplify_graph</a>	Try cleaning up GRAPH by removing unnecessary cluster nodes.</li><li><a href="structcounts.html" class="code" title="function ps = structcounts(nobjects, ps)">structcounts</a>	make PS.LOGPS: ps.logps{i}(n) is prior for an i-structure with n clusters</li><li><a href="structurefit.html" class="code" title="function [ll, graph, bestgraphlls, bestgraph] =structurefit(data, ps, graph, savefile)">structurefit</a>	Fit a given structure to matrix DATA using parameters PS</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="masterrun.html" class="code" title="">masterrun</a>	Charles Kemp, 2008</li><li><a href="runmodel.html" class="code" title="function [ll, graph, names, bestglls, bestgraph] = runmodel(ps, sind,dind, rind, savefile)">runmodel</a>	Given data set DIND, find the best instance of form SIND.</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function [ll graph, bestglls, bestgraph, ps] = brlencases(data, ps, graph,</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [ll, graph, names, bestglls, bestgraph] = runmodel(ps, sind, </a><span class="keyword">...</span>
+0002                               dind, rind, savefile)
+0003 
+0004 <span class="comment">% Given data set DIND, find the best instance of form SIND.</span>
+0005 <span class="comment">%   PS:          parameter structure with hyperparameters, etc</span>
+0006 <span class="comment">%   RIND:     which repeat is this?</span>
+0007 <span class="comment">%   SAVEFILE: where to save interim results</span>
+0008 <span class="comment">% Output:</span>
+0009 <span class="comment">%   LL:           log probability of the best structure found</span>
+0010 <span class="comment">%   GRAPH:     the best structure found</span>
+0011 <span class="comment">%   BESTGLLS:  log probabilities of the structures explored along the way</span>
+0012 <span class="comment">%   BESTGRAPH: structures explored along the way</span>
+0013 
+0014 ps.runps.structname=ps.structures{sind};
+0015 
+0016 
+0017 display(sprintf(<span class="string">'    Repeat %g'</span>, rind));
+0018 fileroot=[<span class="string">'results/'</span>,ps.structures{sind}, <span class="string">'out/'</span>, ps.data{dind}, <span class="keyword">...</span>
+0019           num2str(rind)];
+0020 currdir=pwd;
+0021 
+0022 <span class="comment">% make directory</span>
+0023 [s,mess,messdir]=mkdir(fileroot);
+0024 cd(fileroot)
+0025 savefile = <span class="string">'growthhistory'</span>;
+0026 
+0027 names=[]; 
+0028 <span class="comment">% load data, names</span>
+0029 load(ps.dlocs{dind});
+0030 names
+0031 [nobjects, ps]= <a href="setrunps.html" class="code" title="function [nobjects, ps]=setrunps(data, dind, ps)">setrunps</a>(data, dind, ps);
+0032 
+0033 [data ps]=<a href="scaledata.html" class="code" title="function [data  ps]= scaledata(data, ps)">scaledata</a>(data,ps);
+0034 
+0035 <span class="keyword">if</span> isempty(names)
+0036   <span class="keyword">for</span> i=1:nobjects names{i}=num2str(i); <span class="keyword">end</span>
+0037 <span class="keyword">end</span>
+0038 
+0039 ps.runps.names=names;
+0040 <span class="keyword">if</span> ps.showtruegraph 
+0041   figure(1)
+0042   <span class="keyword">for</span> i=length(names)+1:size(adj,1)
+0043     names{i} = <span class="string">''</span>;
+0044   <span class="keyword">end</span>
+0045   <a href="draw_dot.html" class="code" title="function [xret, yret, labels] = draw_dot(adj, labels, varargin);">draw_dot</a>(adj, names);
+0046   title(<span class="string">'real structure'</span>);
+0047   drawnow
+0048 <span class="keyword">end</span>
+0049 
+0050 graph = [];
+0051 
+0052 <span class="keyword">if</span> isfield(ps, <span class="string">'outsideinit'</span>) &amp;&amp; ~isempty(ps.outsideinit)
+0053   load(ps.outsideinit);
+0054 <span class="keyword">elseif</span> strcmp(ps.runps.type, <span class="string">'rel'</span>) &amp;&amp; strcmp(ps.reloutsideinit,<span class="string">'external'</span>) 
+0055   <span class="keyword">switch</span> ps.runps.structname
+0056     <span class="comment">% partitionnoself missing: that's what we use to initialize the others</span>
+0057     <span class="keyword">case</span> {<span class="string">'partition'</span>,  <span class="string">'dirchain'</span>, <span class="string">'dirchainnoself'</span>, <span class="string">'dirring'</span>,<span class="keyword">...</span>
+0058           <span class="string">'dirringnoself'</span>, <span class="string">'dirhierarchy'</span>,<span class="string">'dirhierarchynoself'</span>,<span class="string">'undirchain'</span>,<span class="keyword">...</span>
+0059       <span class="string">'undirchainnoself'</span>, <span class="string">'undirring'</span>, <span class="string">'undirringnoself'</span>, <span class="keyword">...</span>
+0060       <span class="string">'undirhierarchy'</span>, <span class="string">'undirhierarchynoself'</span>, <span class="string">'order'</span>,<span class="keyword">...</span>
+0061       <span class="string">'ordernoself'</span>}
+0062       bestz = load([ps.relinitdir, ps.data{dind}, <span class="string">'_bestz'</span>]);
+0063       graph = <a href="relgraphinit.html" class="code" title="function graph = relgraphinit(data, z, ps)">relgraphinit</a>(data.R, bestz, ps);
+0064   <span class="keyword">end</span>
+0065 <span class="keyword">else</span>
+0066   <span class="keyword">if</span> strcmp(ps.runps.type, <span class="string">'rel'</span>) &amp;&amp; strcmp(ps.reloutsideinit, <span class="string">'overd'</span>)
+0067     <span class="keyword">switch</span> ps.runps.structname
+0068     <span class="comment">% only for certain structures (not partition, domhier)</span>
+0069       <span class="keyword">case</span> {<span class="string">'dirchain'</span>, <span class="string">'dirchainnoself'</span>, <span class="string">'dirring'</span>,<span class="keyword">...</span>
+0070           <span class="string">'dirringnoself'</span>, <span class="string">'dirhierarchy'</span>,<span class="string">'dirhierarchynoself'</span>,<span class="string">'undirchain'</span>,<span class="keyword">...</span>
+0071       <span class="string">'undirchainnoself'</span>, <span class="string">'undirring'</span>, <span class="string">'undirringnoself'</span>, <span class="keyword">...</span>
+0072       <span class="string">'undirhierarchy'</span>, <span class="string">'undirhierarchynoself'</span>}
+0073         bestz = 1:nobjects;
+0074         graph = <a href="relgraphinit.html" class="code" title="function graph = relgraphinit(data, z, ps)">relgraphinit</a>(data.R, bestz, ps);
+0075     <span class="keyword">end</span>
+0076   <span class="keyword">end</span>
+0077 <span class="keyword">end</span>
+0078 
+0079 <span class="keyword">if</span> ~isfield(ps, <span class="string">'overrideSS'</span>)
+0080   ps.overrideSS = 0;
+0081 <span class="keyword">end</span>
+0082 ps.cleanstrong= 0;
+0083 ps = <a href="structcounts.html" class="code" title="function ps = structcounts(nobjects, ps)">structcounts</a>(nobjects, ps);
+0084 
+0085 <span class="keyword">switch</span> ps.runps.structname
+0086   <span class="keyword">case</span>{<span class="string">'griddimsearch'</span>} <span class="comment">% an alternative way of searching for grids. can</span>
+0087             <span class="comment">% be ignored.</span>
+0088     oldps = ps;
+0089     ps.speed = 5; ps.fixedall= 1; ps.fixedall= 1; ps.init = <span class="string">'none'</span>;
+0090     [score, graph] = <a href="runmodel.html" class="code" title="function [ll, graph, names, bestglls, bestgraph] = runmodel(ps, sind,dind, rind, savefile)">runmodel</a>(ps, 2, dind, rind);
+0091     graph.ncomp = 2; graph.components{1}.type = <span class="string">'chain'</span>;
+0092     <span class="comment">% initialize second component</span>
+0093     graph.components{2} = graph.components{1}; 
+0094     graph.components{2}.type = <span class="string">'chain'</span>; 
+0095     graph.components{2}.adj = [0]; graph.components{2}.W = [0];
+0096     graph.components{2}.adjsym = [0]; graph.components{2}.Wsym = [0];
+0097     graph.components{2}.nodecount=   1; graph.components{2}.nodemap  =   1;
+0098     graph.components{2}.edgecount=   0; graph.components{2}.edgemap  =  [0];
+0099     graph.components{2}.edgecountsym= 0; graph.components{2}.edgemapsym  =  [0];
+0100     graph.components{2}.z         =   ones(1, graph.objcount);
+0101     graph.components{2}.illegal=[];
+0102     graph = <a href="combinegraphs.html" class="code" title="function graph = combinegraphs(graph, ps, varargin)">combinegraphs</a>(graph, ps);
+0103     graph.type = <span class="string">'grid'</span>;
+0104     ps = oldps; ps.runps.structname = <span class="string">'grid'</span>;
+0105   <span class="keyword">case</span>{<span class="string">'cyldimsearchring'</span>}
+0106     oldps = ps;
+0107     ps.speed = 5; ps.fixedinternal = 1; ps.fixedexternal=1; 
+0108     ps.init = <span class="string">'none'</span>;
+0109     [score, graph] = <a href="runmodel.html" class="code" title="function [ll, graph, names, bestglls, bestgraph] = runmodel(ps, sind,dind, rind, savefile)">runmodel</a>(ps, 3, dind, rind);
+0110     graph.ncomp = 2; graph.components{1}.type = <span class="string">'ring'</span>;
+0111     <span class="comment">% initialize second component</span>
+0112     graph.components{2} = graph.components{1}; 
+0113     graph.components{2}.type = <span class="string">'chain'</span>; 
+0114     graph.components{2}.adj = [0]; graph.components{2}.W = [0];
+0115     graph.components{2}.adjsym = [0]; graph.components{2}.Wsym = [0];
+0116     graph.components{2}.nodecount=   1; graph.components{2}.nodemap  =   1;
+0117     graph.components{2}.edgecount=   0; graph.components{2}.edgemap  =  [0];
+0118     graph.components{2}.edgecountsym= 0; graph.components{2}.edgemapsym  =  [0];
+0119     graph.components{2}.z         =   ones(1, graph.objcount);
+0120     graph.components{2}.illegal=[];
+0121     graph = <a href="combinegraphs.html" class="code" title="function graph = combinegraphs(graph, ps, varargin)">combinegraphs</a>(graph, ps);
+0122     ps = oldps; ps.runps.structname = <span class="string">'cylinder'</span>;
+0123     graph.type = <span class="string">'cylinder'</span>;
+0124   <span class="keyword">case</span>{<span class="string">'cyldimsearchchain'</span>}
+0125     oldps = ps;
+0126     ps.speed = 5; ps.fixedinternal = 1; ps.fixedexternal=1; 
+0127     ps.init = <span class="string">'none'</span>;
+0128     [score, graph] = <a href="runmodel.html" class="code" title="function [ll, graph, names, bestglls, bestgraph] = runmodel(ps, sind,dind, rind, savefile)">runmodel</a>(ps, 2, dind, rind);
+0129     graph.ncomp = 2; graph.components{1}.type = <span class="string">'chain'</span>;
+0130     <span class="comment">% initialize second component</span>
+0131     graph.components{2} = graph.components{1}; 
+0132     graph.components{2}.type = <span class="string">'ring'</span>; 
+0133     graph.components{2}.adj = [0]; graph.components{2}.W = [0];
+0134     graph.components{2}.adjsym = [0]; graph.components{2}.Wsym = [0];
+0135     graph.components{2}.nodecount=   1; graph.components{2}.nodemap  =   1;
+0136     graph.components{2}.edgecount=   0; graph.components{2}.edgemap  =  [0];
+0137     graph.components{2}.edgecountsym= 0; graph.components{2}.edgemapsym  =  [0];
+0138     graph.components{2}.z         =   ones(1, graph.objcount);
+0139     graph.components{2}.illegal=[];
+0140     graph = <a href="combinegraphs.html" class="code" title="function graph = combinegraphs(graph, ps, varargin)">combinegraphs</a>(graph, ps);
+0141     ps = oldps; ps.runps.structname = <span class="string">'cylinder'</span>;
+0142     graph.type = <span class="string">'cylinder'</span>;
+0143 <span class="keyword">end</span>
+0144 
+0145 bestglls = {}; bestgraph = {};
+0146 <span class="keyword">switch</span> ps.speed
+0147   <span class="keyword">case</span>{1,2,3,4,5}
+0148     disp(sprintf(<span class="string">'using speed %g'</span>, ps.speed)); 
+0149     [ll, graph, bestglls, bestgraph, ps] = <a href="#_sub1" class="code" title="subfunction [ll graph, bestglls, bestgraph, ps] = brlencases(data, ps, graph,">brlencases</a>(data, ps, graph, <span class="keyword">...</span>
+0150                         bestglls, bestgraph, savefile);
+0151   <span class="keyword">case</span>{54}
+0152     ps.speed = 5; disp(<span class="string">'starting at speed 5'</span>); 
+0153     [ll, graph, bestglls, bestgraph, ps] = <a href="#_sub1" class="code" title="subfunction [ll graph, bestglls, bestgraph, ps] = brlencases(data, ps, graph,">brlencases</a>(data, ps, graph, <span class="keyword">...</span>
+0154                         bestglls, bestgraph, savefile);
+0155     
+0156     ps.speed = 4; disp(<span class="string">'refining at speed 4'</span>); 
+0157     ps.init = <span class="string">'none'</span>; <span class="comment">% branches have already been untied (XXX: maybe it's</span>
+0158               <span class="comment">% good to tie them again)</span>
+0159     [ll, graph, bestglls, bestgraph, ps] = <a href="#_sub1" class="code" title="subfunction [ll graph, bestglls, bestgraph, ps] = brlencases(data, ps, graph,">brlencases</a>(data, ps, graph, <span class="keyword">...</span>
+0160                         bestglls, bestgraph, savefile);
+0161   <span class="keyword">otherwise</span>
+0162     error(<span class="string">'Unknown speed value'</span>);
+0163 <span class="keyword">end</span>
+0164 
+0165 <span class="keyword">if</span> strcmp(ps.runps.structname, <span class="string">'tree'</span>)
+0166    ps.init = <span class="string">'none'</span>; ps.cleanstrong = 1;
+0167    <span class="comment">% remove tree root</span>
+0168    disp(<span class="string">'removing tree root'</span>);
+0169    graph = <a href="simplify_graph.html" class="code" title="function graph = simplify_graph(graph, ps)">simplify_graph</a>(graph,ps);
+0170    [ll, graph, bestglls, bestgraph, ps] = <a href="#_sub1" class="code" title="subfunction [ll graph, bestglls, bestgraph, ps] = brlencases(data, ps, graph,">brlencases</a>(data, ps, graph,<span class="keyword">...</span><span class="comment"> </span>
+0171                         bestglls, bestgraph, savefile);
+0172 <span class="keyword">end</span>
+0173 
+0174 <span class="keyword">if</span> ps.speed == 5
+0175   disp(<span class="string">'finding true score for speed 5'</span>);
+0176   ps.fast = 0;
+0177   [ll graph] = <a href="graph_like.html" class="code" title="function [logI graph] = graph_like(data, graph, ps)">graph_like</a>(data, graph, ps);
+0178   ll = ll + <a href="graph_prior.html" class="code" title="function gp = graph_prior(graph, ps)">graph_prior</a>(graph, ps);
+0179 <span class="keyword">end</span>
+0180 
+0181 <span class="comment">% display estimated structure</span>
+0182 <span class="keyword">if</span> ps.showinferredgraph 
+0183   figure(3)
+0184   <span class="keyword">for</span> i=length(names)+1:size(graph.adj,1)
+0185     names{i} = <span class="string">''</span>;
+0186   <span class="keyword">end</span>
+0187   clf
+0188   <a href="draw_dot.html" class="code" title="function [xret, yret, labels] = draw_dot(adj, labels, varargin);">draw_dot</a>(graph.adj, names);
+0189   title(sprintf(<span class="string">'%s: estimated structure:  %g'</span>, graph.type, ll));
+0190   drawnow
+0191 <span class="keyword">end</span>
+0192 
+0193 cd(currdir);
+0194 
+0195 
+0196 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0197 <span class="comment">% deal with different approaches to branchlengths at current speed</span>
+0198 <a name="_sub1" href="#_subfunctions" class="code">function [ll graph, bestglls, bestgraph, ps] = brlencases(data, ps, graph,</a><span class="keyword">...</span>
+0199                             bestglls, bestgraph, savefile);
+0200 
+0201 speedstr = num2str(ps.speed);
+0202 <span class="keyword">switch</span> ps.init
+0203   <span class="keyword">case</span>{<span class="string">'none'</span>}
+0204     [ll, graph, bestglls{1,ps.speed}, bestgraph{1, ps.speed}] = <span class="keyword">...</span>
+0205     <a href="structurefit.html" class="code" title="function [ll, graph, bestgraphlls, bestgraph] =structurefit(data, ps, graph, savefile)">structurefit</a>(data, ps, graph, [savefile, <span class="string">'noinit'</span>, speedstr]);
+0206   <span class="keyword">case</span>{<span class="string">'ext'</span>}
+0207     ps.fixedexternal = 1;
+0208     [ll, graph, bestglls{1,ps.speed}, bestgraph{1}] = <span class="keyword">...</span>
+0209         <a href="structurefit.html" class="code" title="function [ll, graph, bestgraphlls, bestgraph] =structurefit(data, ps, graph, savefile)">structurefit</a>(data, ps, graph, [savefile, <span class="string">'exttie'</span>, speedstr]);
+0210     disp(<span class="string">'untie external...'</span>);
+0211     ps.fixedexternal = 0;
+0212     [ll, graph, bestglls{2, ps.speed}, bestgraph{2, ps.speed}] = <span class="keyword">...</span>
+0213         <a href="structurefit.html" class="code" title="function [ll, graph, bestgraphlls, bestgraph] =structurefit(data, ps, graph, savefile)">structurefit</a>(data, ps, graph, [savefile, <span class="string">'notie'</span>, speedstr]); 
+0214   <span class="keyword">case</span>{<span class="string">'int'</span>}
+0215     ps.fixedinternal = 1;
+0216     [ll, graph, bestglls{1, ps.speed}, bestgraph{1, ps.speed}] = <span class="keyword">...</span>
+0217         <a href="structurefit.html" class="code" title="function [ll, graph, bestgraphlls, bestgraph] =structurefit(data, ps, graph, savefile)">structurefit</a>(data, ps, graph,  [savefile, <span class="string">'inttie'</span>, speedstr]);
+0218     disp(<span class="string">'untie internal...'</span>);
+0219     ps.fixedinternal = 0;
+0220     [ll, graph, bestglls{2, ps.speed}, bestgraph{2, ps.speed}] = <span class="keyword">...</span>
+0221     <a href="structurefit.html" class="code" title="function [ll, graph, bestgraphlls, bestgraph] =structurefit(data, ps, graph, savefile)">structurefit</a>(data, ps, graph, [savefile, <span class="string">'notie'</span>, speedstr]); 
+0222   <span class="keyword">case</span>{<span class="string">'intext'</span>}
+0223     ps.fixedinternal = 1; ps.fixedexternal = 1;
+0224     [ll, graph, bestglls{1, ps.speed}, bestgraph{1, ps.speed}] = <span class="keyword">...</span>
+0225     <a href="structurefit.html" class="code" title="function [ll, graph, bestgraphlls, bestgraph] =structurefit(data, ps, graph, savefile)">structurefit</a>(data, ps, graph, [savefile, <span class="string">'alltie'</span>, speedstr]);
+0226     disp(<span class="string">'untie internal...'</span>);
+0227     ps.fixedinternal = 0; 
+0228     [ll, graph, bestglls{2, ps.speed}, bestgraph{2, ps.speed}] = <span class="keyword">...</span>
+0229     <a href="structurefit.html" class="code" title="function [ll, graph, bestgraphlls, bestgraph] =structurefit(data, ps, graph, savefile)">structurefit</a>(data, ps, graph, [savefile, <span class="string">'exttie'</span>, speedstr]);
+0230     disp(<span class="string">'untie external...'</span>);
+0231     ps.fixedexternal = 0; 
+0232     [ll, graph, bestglls{3, ps.speed}, bestgraph{3, ps.speed}] = <span class="keyword">...</span>
+0233     <a href="structurefit.html" class="code" title="function [ll, graph, bestgraphlls, bestgraph] =structurefit(data, ps, graph, savefile)">structurefit</a>(data, ps, graph, [savefile, <span class="string">'notie'</span>, speedstr]);
+0234 <span class="keyword">end</span>
+0235</pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

@@ -1,0 +1,238 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of split_node</title>
+  <meta name="keywords" content="split_node">
+  <meta name="description" content="split node C in component CIND using production PIND and put PART1 and PART2">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>split_node
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>split node C in component CIND using production PIND and put PART1 and PART2</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [graph c1 c2] = split_node(graph, compind, c, pind, part1, part2, ps) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> split node C in component CIND using production PIND and put PART1 and PART2
+   in the two children</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="combinegraphs.html" class="code" title="function graph = combinegraphs(graph, ps, varargin)">combinegraphs</a>	create direct product of components in graph.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="best_split.html" class="code" title="function [ll, part1, part2, newgraph]=best_split(graph, compind, c, pind, data, seedpairs, ps)">best_split</a>	Choose the best split of cluster node C.</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [graph c1 c2] = split_node(graph, compind, c, pind, part1, part2, ps)</a>
+0002 
+0003 <span class="comment">% split node C in component CIND using production PIND and put PART1 and PART2</span>
+0004 <span class="comment">%   in the two children</span>
+0005 
+0006 structname = graph.components{compind}.type;
+0007 origgraph = graph;
+0008 
+0009 <span class="keyword">if</span> pind == 1
+0010   <span class="keyword">switch</span> structname
+0011     <span class="keyword">case</span>{<span class="string">'dirchain'</span>, <span class="string">'order'</span>, <span class="string">'dirchainnoself'</span>, <span class="string">'ordernoself'</span>,<span class="keyword">...</span>
+0012          <span class="string">'undirchain'</span>, <span class="string">'undirchainnoself'</span>}
+0013       structname = <span class="string">'chain'</span>;
+0014     <span class="keyword">case</span>{<span class="string">'dirring'</span>, <span class="string">'dirringnoself'</span>, <span class="string">'undirring'</span>, <span class="string">'undirringnoself'</span>}
+0015       structname = <span class="string">'ring'</span>;
+0016     <span class="keyword">case</span>{<span class="string">'dirhierarchy'</span>, <span class="string">'domtree'</span>, <span class="string">'dirhierarchynoself'</span>, <span class="string">'undirhierarchy'</span>,<span class="keyword">...</span>
+0017         <span class="string">'undirhierarchynoself'</span>, <span class="string">'dirdomtreenoself'</span>, <span class="string">'undirdomtree'</span>, <span class="keyword">...</span>
+0018         <span class="string">'undirdomtreenoself'</span>}
+0019       structname = <span class="string">'hierarchy'</span>;
+0020     <span class="keyword">case</span>{<span class="string">'partitionnoself'</span>}
+0021       structname = <span class="string">'partition'</span>;
+0022     <span class="keyword">case</span>{<span class="string">'connectednoself'</span>}
+0023       structname = <span class="string">'connected'</span>;
+0024 
+0025   <span class="keyword">end</span>
+0026 <span class="keyword">end</span>
+0027 
+0028 <span class="keyword">if</span> pind == 2
+0029   <span class="keyword">switch</span> structname
+0030     <span class="keyword">case</span>{<span class="string">'hierarchy'</span>, <span class="string">'dirhierarchy'</span>, <span class="string">'domtree'</span>, <span class="string">'dirhierarchynoself'</span>,<span class="keyword">...</span>
+0031      <span class="string">'ordernoself'</span>, <span class="string">'undirhierarchy'</span>, <span class="string">'undirhierarchynoself'</span>,<span class="keyword">...</span>
+0032      <span class="string">'dirdomtreenoself'</span>, <span class="string">'undirdomtree'</span>, <span class="string">'undirdomtreenoself'</span>}
+0033       structname = <span class="string">'chain'</span>;
+0034       <span class="keyword">if</span> graph.components{compind}.nodecount == 1 <span class="comment">% all productions the same</span>
+0035                           <span class="comment">% for a one node graph</span>
+0036         graph = -inf; c1 = -inf;  c2 = -inf;  <span class="keyword">return</span>;
+0037       <span class="keyword">end</span>
+0038       <span class="keyword">if</span> (sum(graph.components{compind}.adj(:,c)) == 0 &amp;&amp; <span class="keyword">...</span>
+0039           sum(graph.components{compind}.adj(c,:)) &gt;= 2)
+0040         structname = <span class="string">'rootchain'</span>;
+0041       <span class="keyword">end</span>
+0042     <span class="keyword">case</span>{<span class="string">'tree'</span>}
+0043       structname = <span class="string">'treever2'</span>;
+0044       <span class="keyword">if</span> graph.components{compind}.nodecount &lt;= 3 <span class="comment">% all productions the same</span>
+0045         graph = -inf; c1 = -inf;  c2 = -inf;  <span class="keyword">return</span>;
+0046       <span class="keyword">end</span>
+0047   <span class="keyword">end</span>
+0048 <span class="keyword">end</span>
+0049 
+0050 <span class="keyword">if</span> pind == 3
+0051   <span class="keyword">switch</span> structname
+0052     <span class="keyword">case</span>{<span class="string">'hierarchy'</span>, <span class="string">'dirhierarchy'</span>, <span class="string">'domtree'</span>, <span class="string">'dirhierarchynoself'</span>, <span class="keyword">...</span>
+0053     <span class="string">'undirhierarchy'</span>, <span class="string">'undirhierarchynoself'</span>, <span class="string">'dirdomtreenoself'</span>, <span class="keyword">...</span>
+0054     <span class="string">'undirdomtree'</span>, <span class="string">'undirdomtreenoself'</span> } 
+0055       structname = <span class="string">'domtreeflat'</span>;
+0056       <span class="keyword">if</span> sum(graph.components{compind}.adj(:,c)) == 0 <span class="comment">% c has no parents</span>
+0057         graph = -inf; c1 = -inf; c2 = -inf; <span class="keyword">return</span>;
+0058       <span class="keyword">end</span>
+0059   <span class="keyword">end</span>
+0060 <span class="keyword">end</span>
+0061 
+0062 disp(structname)
+0063 
+0064 ntot    = graph.components{compind}.nodecount;
+0065 origadj = graph.components{compind}.adj;
+0066 origW   = graph.components{compind}.W;
+0067 <span class="comment">% make markers for original edges</span>
+0068 origind = find(origadj);
+0069 nold    = length(origind);
+0070 origadj(origind)=1:nold;
+0071 newinternal = [];
+0072 
+0073 <span class="keyword">switch</span> structname
+0074     <span class="keyword">case</span> {<span class="string">'partition'</span>, <span class="string">'chain'</span>, <span class="string">'ring'</span>, <span class="string">'hierarchy'</span>, <span class="string">'domtreeflat'</span>, <span class="keyword">...</span>
+0075       <span class="string">'connected'</span>, <span class="string">'rootchain'</span>}
+0076       newadj   = zeros(ntot+1);
+0077       minusnew       = setdiff(1:ntot+1, c+1);
+0078       newadj(minusnew, minusnew) = origadj;
+0079       <span class="comment">% give the new node all the connections of the previous nodes</span>
+0080       newadj(c+1,:)=newadj(c,:); 
+0081       newadj(:,c+1)=newadj(:,c); 
+0082 
+0083       <span class="comment">% c, c+1 are the new clusters</span>
+0084       c1 = c; c2 = c+1;
+0085       newnodes = [c1 c2];
+0086       oldps=find(newadj(:,c)');
+0087       oldchild=find(newadj(c,:));
+0088       <span class="keyword">switch</span> structname
+0089         <span class="keyword">case</span> {<span class="string">'partition'</span>}
+0090         <span class="keyword">case</span> {<span class="string">'connected'</span>}
+0091       newadj(c, c+1)=inf; 
+0092         <span class="keyword">case</span> {<span class="string">'chain'</span>, <span class="string">'ring'</span>}
+0093       newadj(c, c+1)=inf; newadj(c+1, c)=0;
+0094       newadj(oldps, c+1)=0; newadj(c, oldchild)=0;
+0095       <span class="keyword">if</span> strcmp(structname, <span class="string">'ring'</span>) 
+0096           <span class="keyword">if</span> isempty(oldps) &amp;&amp; isempty(oldchild) 
+0097             newadj(c+1, c)=inf;
+0098           <span class="keyword">end</span>
+0099       <span class="keyword">end</span>
+0100     <span class="keyword">case</span> {<span class="string">'hierarchy'</span>}
+0101       newadj(c, c+1)=inf; newadj(c+1, c)=0; 
+0102       newadj(oldps, c+1)=0; newadj(c+1, oldchild) = 0;
+0103     <span class="keyword">case</span> {<span class="string">'domtreeflat'</span>}
+0104       newadj(c, c+1)=0; newadj(c+1, c)=0; 
+0105       newadj(c+1, oldchild) = 0;
+0106     <span class="keyword">case</span> {<span class="string">'rootchain'</span>}
+0107       newadj(c, c+1)=inf; newadj(c+1, c)=0; 
+0108       newadj(c+1, oldchild(1)) = 0;
+0109       newadj(c, oldchild(2:end)) = 0;
+0110       <span class="keyword">end</span>
+0111     <span class="keyword">case</span> {<span class="string">'tree'</span>}
+0112       newadj   = zeros(ntot+2);
+0113       minusnew       = setdiff(1:ntot+2, [c+1, c+2]);
+0114       newadj(minusnew, minusnew) = origadj;
+0115 
+0116       <span class="comment">% c+1, c+2 new leaf nodes</span>
+0117       c1 = c+1; c2 = c+2;
+0118       newnodes = [c c1 c2];
+0119       newadj(c+1, c)=0; newadj(c, c+1)=inf; 
+0120       newadj(c+2, c)=0; newadj(c, c+2)=inf; 
+0121       newinternal= c; 
+0122     <span class="keyword">case</span> {<span class="string">'treever2'</span>}
+0123       newadj   = zeros(ntot+2);
+0124       cpar = find(origadj(:,c)); 
+0125       csibs = find(origadj(cpar,:)); csib = csibs(csibs ~=c);
+0126 
+0127       origadj(cpar, csib) = 0;
+0128       minusnew       = setdiff(1:ntot+2, [c+1, c+2]);
+0129       newadj(minusnew, minusnew) = origadj;
+0130 
+0131       <span class="comment">% c+1, c+2 new leaf nodes</span>
+0132       c1 = c+1; c2 = c+2;
+0133       newnodes = [c c1 c2];
+0134       newadj(c, c+2) = inf; newadj(c, minusnew(csib)) = inf; 
+0135       newadj(minusnew(cpar), c+1) = inf;
+0136       newinternal= c; 
+0137     <span class="keyword">otherwise</span>
+0138       error(<span class="string">'Unknown structure'</span>);
+0139 <span class="keyword">end</span>
+0140 
+0141 newind=find(newadj);
+0142 [s sind]=sort(newadj(newind));
+0143 newW = newadj;  
+0144 
+0145 <span class="comment">% replace markers with weights</span>
+0146 <span class="keyword">if</span> length(origind) &gt; 0
+0147   newW(isinf(newW))=median(origW(origind));
+0148   newW(newind(sind(1:nold)))=origW(origind);
+0149 <span class="keyword">else</span>
+0150   newW(isinf(newW))=1;
+0151 <span class="keyword">end</span>
+0152 
+0153 newadj(newadj&gt;0)=1;
+0154 
+0155 <span class="comment">% map(i) tells us what node i in old graph is now labelled</span>
+0156 <span class="comment">% imap(j) tells us what node j in new graph corresponds to</span>
+0157 map = zeros(1,size(newadj,1)); imap = map;
+0158 brandnew = setdiff(newnodes, c);
+0159 oldind = setdiff(1:size(newadj,1), brandnew);
+0160 map(1:length(oldind))=oldind;
+0161 imap(oldind) = 1:length(oldind); imap(brandnew) = c;
+0162 
+0163 oldz = graph.components{compind}.z;
+0164 newz = map(oldz);
+0165 
+0166 newillegal= zeros(1,size(newadj,1));
+0167 newillegal= map(graph.components{compind}.illegal);
+0168 graph.components{compind}.illegal=[newillegal, newinternal];
+0169 
+0170 graph.components{compind}.adj = newadj;
+0171 graph.components{compind}.W   = newW;
+0172 doubleW = 0*newW; doubleW(newadj &amp; newadj')= newW(newadj &amp; newadj');
+0173 graph.components{compind}.Wsym   = newW+newW'-doubleW;
+0174 graph.components{compind}.adjsym   = newadj+newadj' - (newadj &amp; newadj');
+0175 
+0176 graph.components{compind}.nodecount = size(newadj,1);
+0177 graph.components{compind}.edgecount = sum(sum(newadj)); 
+0178 
+0179 graph.components{compind}.edgecountsym =<span class="keyword">...</span>
+0180       sum(sum(graph.components{compind}.adjsym))/2; 
+0181 
+0182 <span class="comment">% new cluster nodes appear in order at the end of newnodes</span>
+0183 newz(part1) = newnodes(end-1);
+0184 newz(part2) = newnodes(end);
+0185 graph.components{compind}.z = newz;
+0186 
+0187 graph = <a href="combinegraphs.html" class="code" title="function graph = combinegraphs(graph, ps, varargin)">combinegraphs</a>(graph, ps, <span class="string">'origgraph'</span>, origgraph, <span class="keyword">...</span>
+0188               <span class="string">'compind'</span>, compind, <span class="string">'imap'</span>, imap);
+0189 
+0190 <span class="comment">%disp(origgraph.Wcluster); disp('---'); disp(graph.Wcluster);</span>
+0191</pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

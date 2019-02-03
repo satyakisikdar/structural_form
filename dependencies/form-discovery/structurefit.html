@@ -1,0 +1,341 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of structurefit</title>
+  <meta name="keywords" content="structurefit">
+  <meta name="description" content="Fit a given structure to matrix DATA using parameters PS">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>structurefit
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Fit a given structure to matrix DATA using parameters PS</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [ll, graph, bestgraphlls, bestgraph] =structurefit(data, ps, graph, savefile) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Fit a given structure to matrix DATA using parameters PS</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="choose_node_split.html" class="code" title="function [ll, part1, part2, newgraph]=choose_node_split(graph, compind,splitind, pind, data, ps)">choose_node_split</a>	split node SPLITIND in component COMPIND using production PIND</li><li><a href="draw_dot.html" class="code" title="function [xret, yret, labels] = draw_dot(adj, labels, varargin);">draw_dot</a>	</li><li><a href="gibbs_clean.html" class="code" title="function [ll graph] = gibbs_clean(graph, data, ps, varargin)">gibbs_clean</a>	SWAPTYPES: which swaps to include</li><li><a href="graph_like.html" class="code" title="function [logI graph] = graph_like(data, graph, ps)">graph_like</a>	graph_like(data, adj, beta, sigma): compute log p(DATA|GRAPH)</li><li><a href="graph_prior.html" class="code" title="function gp = graph_prior(graph, ps)">graph_prior</a>	Compute prior on graph GRAPH.</li><li><a href="makeemptygraph.html" class="code" title="function graph  = makeemptygraph(ps)">makeemptygraph</a>	Make a graph with one cluster and no objects.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="runmodel.html" class="code" title="function [ll, graph, names, bestglls, bestgraph] = runmodel(ps, sind,dind, rind, savefile)">runmodel</a>	Given data set DIND, find the best instance of form SIND.</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function [m mi mc mpind]= bestsplit(graph, depth, lls)</a></li><li><a href="#_sub2" class="code">function [ll graph]= graphscorenoopt(graph, data, ps)</a></li><li><a href="#_sub3" class="code">function [ll graph]= optimizebranches(graph, data, ps)</a></li><li><a href="#_sub4" class="code">function [lls newgraph]= optimizedepth(graph, depth, lls,  newgraph, data, ps)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [ll, graph, bestgraphlls, bestgraph] = </a><span class="keyword">...</span>
+0002             structurefit(data, ps, graph, savefile) 
+0003 
+0004 <span class="comment">% Fit a given structure to matrix DATA using parameters PS</span>
+0005 
+0006 <span class="comment">%  Graph representation:</span>
+0007 <span class="comment">%   graph.adj: adjacency matrix</span>
+0008 <span class="comment">%   graph.objcount: number of object nodes (as distinct from cluster nodes)</span>
+0009 <span class="comment">%   graph.W: edge weights (w = 1/distance)</span>
+0010 
+0011 loopeps = 1e-2;
+0012 bestgraphlls = []; bestgraph = {};
+0013 
+0014 <span class="keyword">if</span> isempty(graph) 
+0015   <span class="comment">% set up initial graph</span>
+0016   graph = <a href="makeemptygraph.html" class="code" title="function graph  = makeemptygraph(ps)">makeemptygraph</a>(ps);
+0017 <span class="keyword">end</span>
+0018 
+0019 [currprob graph]= <a href="#_sub3" class="code" title="subfunction [ll graph]= optimizebranches(graph, data, ps)">optimizebranches</a>(graph, data, ps);
+0020 <span class="keyword">if</span> ps.speed == 5
+0021   [currprob graph]= <a href="#_sub2" class="code" title="subfunction [ll graph]= graphscorenoopt(graph, data, ps)">graphscorenoopt</a>(graph, data, ps); 
+0022 <span class="keyword">end</span>
+0023 
+0024 stopflag=0;
+0025 depth=1;
+0026 
+0027 <span class="comment">% continue splitting cluster nodes while score improves</span>
+0028 <span class="keyword">while</span> (stopflag==0)
+0029   m = -inf; 
+0030   <span class="keyword">for</span> i=1:graph.ncomp
+0031     clegal = unique(graph.components{i}.z);
+0032     <span class="keyword">for</span> c = 1:graph.components{i}.nodecount
+0033       <span class="comment">% if c is cluster node</span>
+0034       <span class="keyword">if</span> ismember(c, clegal) 
+0035         <span class="keyword">for</span> pind = 1:graph.components{i}.prodcount
+0036       <span class="comment">% split node c in component i using production pind</span>
+0037           [lls{depth,i,c, pind}, part{depth,i,c,pind, 1}, <span class="keyword">...</span>
+0038        part{depth,c,pind,2}, newgraph{depth,i,c, pind}] = <span class="keyword">...</span>
+0039         <a href="choose_node_split.html" class="code" title="function [ll, part1, part2, newgraph]=choose_node_split(graph, compind,splitind, pind, data, ps)">choose_node_split</a>(graph, i, c, pind, data, ps);   
+0040     <span class="keyword">end</span>
+0041       <span class="keyword">end</span>
+0042     <span class="keyword">end</span>
+0043   <span class="keyword">end</span>
+0044 
+0045   <span class="comment">% for combinations: try moving objects to vacant neighbors</span>
+0046   <span class="keyword">if</span> graph.ncomp &gt; 1
+0047     i = graph.ncomp+1; lls{depth,i,1,1}= -inf; newgraph{depth,i,1,1} = [];
+0048     nclusternodes = size(graph.adjcluster,1);
+0049     nodecounts = hist(graph.z, 1:nclusternodes);
+0050     c = 0; 
+0051     <span class="keyword">for</span> nd = 1:size(graph.adjcluster,1);
+0052       <span class="keyword">if</span> nodecounts(nd) &gt; 1
+0053         nbs = find(graph.adjclustersym(:,nd));
+0054     <span class="keyword">for</span> nbind = 1:length(nbs)
+0055       nb = nbs(nbind);
+0056       <span class="keyword">if</span> nodecounts(nb) == 0
+0057         c = c+1;
+0058         [lls{depth,i,c, 1}, part{depth,i,c,1, 1}, <span class="keyword">...</span>
+0059           part{depth,c,1,2}, newgraph{depth,i,c, 1}] = <span class="keyword">...</span>
+0060             <a href="choose_node_split.html" class="code" title="function [ll, part1, part2, newgraph]=choose_node_split(graph, compind,splitind, pind, data, ps)">choose_node_split</a>(graph, -1, nd, nb,  data, ps);   
+0061       <span class="keyword">end</span>
+0062     <span class="keyword">end</span>
+0063       <span class="keyword">end</span>
+0064     <span class="keyword">end</span>
+0065   <span class="keyword">end</span>
+0066 
+0067   [m mi mc mpind] = <a href="#_sub1" class="code" title="subfunction [m mi mc mpind]= bestsplit(graph, depth, lls)">bestsplit</a>(graph, depth, lls);
+0068 
+0069   <span class="keyword">if</span> m == -inf <span class="comment">% no splits possible</span>
+0070    lls{depth, mi, mc, mpind} = currprob; 
+0071    newgraph{depth, mi, mc, mpind} = graph;
+0072   <span class="keyword">end</span>
+0073 
+0074   <span class="keyword">if</span> ps.speed == 4
+0075     <span class="comment">% optimize branches for best split</span>
+0076     <span class="comment">% ps.speed == 3: branches already optimized.</span>
+0077     <span class="comment">% ps.speed == 5: don't worry about optimizations except as heuristic</span>
+0078     [lls{depth, mi, mc, mpind}, newgraph{depth, mi, mc, mpind}] = <span class="keyword">...</span>
+0079       <a href="#_sub3" class="code" title="subfunction [ll graph]= optimizebranches(graph, data, ps)">optimizebranches</a>(newgraph{depth,mi, mc, mpind}, data, ps);
+0080   <span class="keyword">end</span>
+0081 
+0082   newscore = lls{depth, mi, mc, mpind}; newg = newgraph{depth, mi, mc, mpind};
+0083 
+0084   <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0085   <span class="keyword">if</span> ps.showpreclean  &amp;&amp; ~isempty(newg)
+0086     figure(1)
+0087     clf
+0088     title(sprintf(<span class="string">'pre-clean: %s  %g'</span>, graph.type, newscore));
+0089     ns = ps.runps.names;
+0090     <span class="keyword">for</span> i=length(ns)+1:size(newg.adj,1)
+0091       ns{i}=<span class="string">' '</span>;
+0092     <span class="keyword">end</span>
+0093     <a href="draw_dot.html" class="code" title="function [xret, yret, labels] = draw_dot(adj, labels, varargin);">draw_dot</a>(newg.adj, ns);
+0094     drawnow
+0095   <span class="keyword">end</span>
+0096   <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0097 
+0098   <span class="keyword">if</span> strcmp(ps.runps.type, <span class="string">'rel'</span>)
+0099     <span class="comment">% try swapping objects before removing clusters. This gives a new cluster</span>
+0100     <span class="comment">% the chance to establish itself. Mainly added (5/8/06) to allow the</span>
+0101     <span class="comment">% algorithm to find the best ring for the Kula data. I haven't tested this</span>
+0102     <span class="comment">% for feature/similarity data but suspect it might not be good for two</span>
+0103     <span class="comment">% reasons:</span>
+0104     <span class="comment">%    a) for feature data, we initially tie branches together and therefore</span>
+0105     <span class="comment">%    encourage the model to introduce more clusters than is correct. We</span>
+0106     <span class="comment">%    might not want to make it easier for extra clusters to stick around.</span>
+0107     <span class="comment">%    b) it's probably too expensive on the bigger data sets.</span>
+0108     [newscore, newg] =  <a href="gibbs_clean.html" class="code" title="function [ll graph] = gibbs_clean(graph, data, ps, varargin)">gibbs_clean</a>(newg, data, ps, <span class="string">'loopmax'</span>, 2, <span class="string">'fast'</span>, 1,<span class="keyword">...</span>
+0109                         <span class="string">'swaptypes'</span>, [1,0,0,0,0]);
+0110     [newscore, newg] =  <a href="gibbs_clean.html" class="code" title="function [ll graph] = gibbs_clean(graph, data, ps, varargin)">gibbs_clean</a>(newg, data, ps, <span class="string">'loopmax'</span>, 2, <span class="string">'fast'</span>, 1,<span class="keyword">...</span>
+0111                         <span class="string">'swaptypes'</span>, [0,1,0,0,0]);
+0112     <span class="comment">%[newscore, newg] =  gibbs_clean(newg, data, ps, 'loopmax', 2, 'fast', 1);</span>
+0113   <span class="keyword">else</span>
+0114     <span class="comment">% clean new graph using a fast pass</span>
+0115     disp(<span class="string">'fastcleaning'</span>);
+0116     [newscore, newg] =  <a href="gibbs_clean.html" class="code" title="function [ll graph] = gibbs_clean(graph, data, ps, varargin)">gibbs_clean</a>(newg, data, ps, <span class="string">'loopmax'</span>, 2, <span class="string">'fast'</span>, 1);
+0117   <span class="keyword">end</span>
+0118 
+0119   <span class="keyword">switch</span> ps.speed
+0120     <span class="keyword">case</span> {5} <span class="comment">% avoid optimizing branch lengths in many cases</span>
+0121       <span class="keyword">if</span> depth &lt; 10 
+0122       disp(<span class="string">'small depth: optimizing branch lengths of best split'</span>);
+0123           [nll, ng] = <a href="#_sub3" class="code" title="subfunction [ll graph]= optimizebranches(graph, data, ps)">optimizebranches</a>(newg, data, ps);
+0124           [newscore, newg] = <a href="#_sub2" class="code" title="subfunction [ll graph]= graphscorenoopt(graph, data, ps)">graphscorenoopt</a>(ng, data, ps);
+0125       <span class="keyword">end</span>
+0126       
+0127       <span class="keyword">if</span> newscore - currprob &lt;= loopeps 
+0128         <span class="comment">% opt branch lengths as heuristic</span>
+0129         disp(<span class="string">'optimizing branch lengths'</span>);
+0130         [nll, ng] = <a href="#_sub3" class="code" title="subfunction [ll graph]= optimizebranches(graph, data, ps)">optimizebranches</a>(graph, data, ps);
+0131         [newscore, newg] = <a href="#_sub2" class="code" title="subfunction [ll graph]= graphscorenoopt(graph, data, ps)">graphscorenoopt</a>(ng, data, ps);
+0132         <span class="keyword">if</span> newscore - currprob &lt;= loopeps &amp;&amp; depth &gt;= 10 
+0133           disp(<span class="string">'optimizing branch lengths of best split'</span>);
+0134           [nll, ng] = <a href="#_sub3" class="code" title="subfunction [ll graph]= optimizebranches(graph, data, ps)">optimizebranches</a>(newgraph{depth,mi,mc,mpind}, data, ps);
+0135           [newscore, newg] = <a href="#_sub2" class="code" title="subfunction [ll graph]= graphscorenoopt(graph, data, ps)">graphscorenoopt</a>(ng, data, ps);
+0136         <span class="keyword">end</span>
+0137       <span class="keyword">end</span>
+0138 
+0139       <span class="keyword">if</span> newscore - currprob &lt;= loopeps 
+0140         <span class="comment">% clean current graph using a gibbs-style pass</span>
+0141         disp(<span class="string">'slow cleaning current graph'</span>);
+0142         [newscore, newg] =   <a href="gibbs_clean.html" class="code" title="function [ll graph] = gibbs_clean(graph, data, ps, varargin)">gibbs_clean</a>(graph, data, ps, <span class="string">'loopmax'</span>, 2);
+0143       <span class="keyword">end</span>
+0144 
+0145       <span class="keyword">if</span> newscore - currprob &lt;= loopeps 
+0146         <span class="comment">% optimize all splits at this depth</span>
+0147         disp(<span class="string">'optimize all splits at current depth'</span>);
+0148         [lls newgraph]=<a href="#_sub4" class="code" title="subfunction [lls newgraph]= optimizedepth(graph, depth, lls,  newgraph, data, ps)">optimizedepth</a>(graph, depth, lls, newgraph, data,ps);
+0149         [m mi mc mpind] = <a href="#_sub1" class="code" title="subfunction [m mi mc mpind]= bestsplit(graph, depth, lls)">bestsplit</a>(graph, depth, lls);
+0150         <span class="keyword">if</span> lls{depth,mi,mc,mpind} &gt; newscore
+0151           newscore = lls{depth,mi,mc,mpind};
+0152           newg = newgraph{depth,mi,mc,mpind};
+0153         <span class="keyword">end</span>
+0154       <span class="keyword">end</span>
+0155       
+0156     <span class="keyword">case</span>{1,2,3,4} 
+0157       <span class="keyword">if</span> newscore - currprob &lt;= loopeps &amp;&amp; ps.speed == 4
+0158         <span class="comment">% optimize all splits at this depth</span>
+0159         disp(<span class="string">'optimize all splits at current depth'</span>);
+0160         [lls newgraph]=<a href="#_sub4" class="code" title="subfunction [lls newgraph]= optimizedepth(graph, depth, lls,  newgraph, data, ps)">optimizedepth</a>(graph, depth, lls, newgraph, data,ps);
+0161         [m mi mc mpind] = <a href="#_sub1" class="code" title="subfunction [m mi mc mpind]= bestsplit(graph, depth, lls)">bestsplit</a>(graph, depth, lls);
+0162         <span class="keyword">if</span> lls{depth,mi,mc,mpind} &gt; newscore
+0163           newscore = lls{depth,mi,mc,mpind};
+0164           newg = newgraph{depth,mi,mc,mpind};
+0165         <span class="keyword">end</span>
+0166       <span class="keyword">end</span>
+0167      
+0168       <span class="keyword">if</span> newscore - currprob &lt;= loopeps 
+0169         <span class="comment">% clean current graph using a gibbs-style pass</span>
+0170         disp(<span class="string">'slow cleaning current graph'</span>);
+0171         [newscore, newg] = <a href="gibbs_clean.html" class="code" title="function [ll graph] = gibbs_clean(graph, data, ps, varargin)">gibbs_clean</a>(graph, data, ps, <span class="string">'loopmax'</span>, 2);
+0172       <span class="keyword">end</span>
+0173     
+0174       <span class="keyword">if</span> newscore - currprob &lt;= loopeps 
+0175         <span class="comment">% replace best split with a near miss of current graph if we can find a</span>
+0176         <span class="comment">%    good one</span>
+0177         disp(<span class="string">'looking for 10 near misses'</span>);
+0178         [newscore, newg] = <a href="gibbs_clean.html" class="code" title="function [ll graph] = gibbs_clean(graph, data, ps, varargin)">gibbs_clean</a>(graph, data, ps, <span class="string">'loopmax'</span>, 2, <span class="keyword">...</span>
+0179                        <span class="string">'nearmisses'</span>, 10,  <span class="string">'loopeps'</span>, loopeps);
+0180       <span class="keyword">end</span>
+0181   <span class="keyword">end</span>
+0182 
+0183   
+0184   <span class="comment">% if we still can't beat current graph</span>
+0185   <span class="keyword">if</span> newscore - currprob &lt;= loopeps 
+0186     stopflag=1;
+0187   <span class="keyword">else</span> <span class="comment">% NB: we might go around a few extra times when graph and newgraph are</span>
+0188        <span class="comment">% basically the same</span>
+0189     disp(sprintf(<span class="string">'improvement: %g'</span>, newscore - currprob));
+0190     newgraph{depth,mi, mc, mpind} = newg;
+0191     lls{depth, mi, mc, mpind} = newscore;
+0192     graph = newg;
+0193     currprob = newscore;
+0194     bestgraph{depth} = graph; bestgraphlls(depth) = currprob;
+0195     depth = depth+1;
+0196     save(savefile, <span class="string">'bestgraphlls'</span>, <span class="string">'bestgraph'</span>);
+0197     <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0198     <span class="keyword">if</span> ps.showpostclean 
+0199       figure(2)
+0200       clf
+0201       title(sprintf(<span class="string">'post-clean: %s  %g'</span>, graph.type, currprob));
+0202       ns = ps.runps.names;
+0203       <span class="keyword">for</span> i=length(ns)+1:size(graph.adj,1)
+0204         ns{i}=<span class="string">' '</span>;
+0205       <span class="keyword">end</span>
+0206       <a href="draw_dot.html" class="code" title="function [xret, yret, labels] = draw_dot(adj, labels, varargin);">draw_dot</a>(graph.adj, ns);
+0207       drawnow
+0208     <span class="keyword">end</span>
+0209     <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0210   <span class="keyword">end</span>
+0211 <span class="keyword">end</span>
+0212 
+0213 ll = currprob;
+0214 
+0215 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0216 <a name="_sub1" href="#_subfunctions" class="code">function [m mi mc mpind]= bestsplit(graph, depth, lls) </a>
+0217 
+0218 <span class="comment">% find indices of best split at DEPTH</span>
+0219 
+0220 m = -inf; mi = 1; mc = 1; mpind = 1;
+0221 <span class="keyword">for</span> i=1:graph.ncomp
+0222   clegal = unique(graph.components{i}.z);
+0223   <span class="keyword">for</span> c = 1:graph.components{i}.nodecount
+0224     <span class="comment">% if c is cluster node</span>
+0225     <span class="keyword">if</span> ismember(c, clegal) 
+0226       <span class="keyword">for</span> pind = 1:graph.components{i}.prodcount
+0227         <span class="keyword">if</span> lls{depth, i, c, pind} &gt; m
+0228           m = lls{depth,i,c, pind}; mi = i; mc = c; mpind = pind;
+0229     <span class="keyword">end</span>
+0230       <span class="keyword">end</span>
+0231     <span class="keyword">end</span>
+0232   <span class="keyword">end</span>
+0233 <span class="keyword">end</span>
+0234 
+0235 <span class="keyword">if</span> graph.ncomp &gt; 1
+0236   i = graph.ncomp+1;
+0237   <span class="keyword">for</span> c = 1:size(lls, 3)
+0238       <span class="keyword">if</span> ~isempty(lls{depth,i,c,1}) &amp;&amp; lls{depth, i, c, 1} &gt; m
+0239         m = lls{depth,i,c, pind}; mi = i; mc = c; mpind = pind;
+0240       <span class="keyword">end</span>
+0241   <span class="keyword">end</span>
+0242 <span class="keyword">end</span>
+0243 
+0244 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0245 <span class="comment">% approximate graph score (no integrating out)</span>
+0246 <a name="_sub2" href="#_subfunctions" class="code">function [ll graph]= graphscorenoopt(graph, data, ps) </a>
+0247 
+0248 ps.fast = 1; <span class="comment">% fast mode -- don't compute MAP branch lengths, etc</span>
+0249 [ll graph] = <a href="graph_like.html" class="code" title="function [logI graph] = graph_like(data, graph, ps)">graph_like</a>(data, graph, ps);
+0250  ll = ll + <a href="graph_prior.html" class="code" title="function gp = graph_prior(graph, ps)">graph_prior</a>(graph, ps);
+0251 
+0252 
+0253 
+0254 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0255 <a name="_sub3" href="#_subfunctions" class="code">function [ll graph]= optimizebranches(graph, data, ps) </a>
+0256 
+0257 ps.fast = 0;
+0258 [ll graph] = <a href="graph_like.html" class="code" title="function [logI graph] = graph_like(data, graph, ps)">graph_like</a>(data, graph, ps);
+0259  ll = ll + <a href="graph_prior.html" class="code" title="function gp = graph_prior(graph, ps)">graph_prior</a>(graph, ps);
+0260 
+0261 
+0262 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0263 <a name="_sub4" href="#_subfunctions" class="code">function [lls newgraph]= optimizedepth(graph, depth, lls,  newgraph, data, ps) </a>
+0264 <span class="comment">% optimize all splits at DEPTH</span>
+0265 
+0266 <span class="keyword">for</span> i=1:graph.ncomp
+0267   clegal = unique(graph.components{i}.z);
+0268   <span class="keyword">for</span> c = 1:graph.components{i}.nodecount
+0269     <span class="comment">% if c is cluster node</span>
+0270     <span class="keyword">if</span> ismember(c, clegal) 
+0271       <span class="keyword">for</span> pind = 1:graph.components{i}.prodcount
+0272         <span class="comment">% there'll be no splits of nodes with one object</span>
+0273         <span class="keyword">if</span> ~isempty(newgraph{depth,i,c,pind})
+0274           [lls{depth, i, c, pind}, newgraph{depth, i, c, pind}] = <span class="keyword">...</span>
+0275         <a href="#_sub3" class="code" title="subfunction [ll graph]= optimizebranches(graph, data, ps)">optimizebranches</a>(newgraph{depth,i, c, pind}, data, ps);
+0276         <span class="keyword">end</span>
+0277       <span class="keyword">end</span>
+0278     <span class="keyword">end</span>
+0279   <span class="keyword">end</span>
+0280 <span class="keyword">end</span>
+0281 
+0282 <span class="keyword">if</span> graph.ncomp &gt; 1
+0283   i = graph.ncomp+1;
+0284   <span class="keyword">for</span> c = 1:size(lls, 3)
+0285       <span class="keyword">if</span> ~isempty(newgraph{depth, i, c, 1}) 
+0286           [lls{depth, i, c, 1}, newgraph{depth, i, c, 1}] = <span class="keyword">...</span>
+0287         <a href="#_sub3" class="code" title="subfunction [ll graph]= optimizebranches(graph, data, ps)">optimizebranches</a>(newgraph{depth,i, c, 1}, data, ps);
+0288       <span class="keyword">end</span>
+0289   <span class="keyword">end</span>
+0290 <span class="keyword">end</span>
+0291 
+0292 
+0293</pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

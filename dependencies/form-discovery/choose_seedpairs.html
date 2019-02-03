@@ -1,0 +1,98 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of choose_seedpairs</title>
+  <meta name="keywords" content="choose_seedpairs">
+  <meta name="description" content="Choose pairs to seed split of node C in component PIND.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>choose_seedpairs
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Choose pairs to seed split of node C in component PIND.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function seedpairs = choose_seedpairs(graph, compind,c,pind,  ps) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Choose pairs to seed split of node C in component PIND.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="choose_node_split.html" class="code" title="function [ll, part1, part2, newgraph]=choose_node_split(graph, compind,splitind, pind, data, ps)">choose_node_split</a>	split node SPLITIND in component COMPIND using production PIND</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function seedpairs = choose_seedpairs(graph, compind,c,pind,  ps)</a>
+0002 
+0003 <span class="comment">% Choose pairs to seed split of node C in component PIND.</span>
+0004 
+0005 <span class="comment">% C:       cluster node to split</span>
+0006 <span class="comment">% COMPIND: current graph component (-1 for top level split)</span>
+0007 <span class="comment">% PIND : production to try</span>
+0008 
+0009 <span class="comment">% pc: paircount -- number of seedpairs to try for each object</span>
+0010 pc = 1;
+0011 
+0012 <span class="keyword">if</span> compind &lt; 0 <span class="comment">% high level split</span>
+0013   partmembers = find(graph.z == c);
+0014 <span class="keyword">else</span> 
+0015   partmembers = find(graph.components{compind}.z == c);
+0016 <span class="keyword">end</span>
+0017 
+0018 <span class="keyword">if</span> length(partmembers) &lt;= 5 <span class="comment">% consider all possible seedsplits</span>
+0019   seedpairs = nchoosek(partmembers,2);
+0020 <span class="keyword">else</span>
+0021   <span class="keyword">for</span> i=1:length(partmembers)
+0022     clustmembers = find(graph.z==graph.z(partmembers(i)));
+0023     clustmembers = clustmembers(clustmembers ~= partmembers(i));
+0024     clustmembers = clustmembers(randperm(length(clustmembers)));
+0025     <span class="keyword">if</span> isempty(clustmembers)
+0026       clustmembers = partmembers(partmembers~=partmembers(i)); 
+0027     <span class="keyword">end</span>
+0028     <span class="keyword">if</span> length(clustmembers) &lt; pc 
+0029       clustmembers = repmat(clustmembers, 1, pc); 
+0030     <span class="keyword">end</span>
+0031     pair2(i,:) = clustmembers(1:pc);
+0032   <span class="keyword">end</span>
+0033   pair1 = repmat(partmembers', pc,1);
+0034   seedpairs=[pair1 pair2(:)];
+0035 <span class="keyword">end</span>
+0036 
+0037 <span class="keyword">if</span> compind &lt; 0 <span class="comment">% high level split</span>
+0038   seedpairs = [seedpairs; fliplr(seedpairs)];
+0039 <span class="keyword">else</span>
+0040   <span class="keyword">switch</span> ps.runps.structname
+0041     <span class="keyword">case</span> {<span class="string">'partition'</span>} <span class="comment">% children are symmetric ...</span>
+0042     <span class="keyword">case</span> {<span class="string">'tree'</span>} 
+0043       <span class="keyword">if</span> pind == 2 &amp; size(graph.components{compind}.adj,1)&gt;1
+0044         seedpairs = [seedpairs; fliplr(seedpairs)];
+0045       <span class="keyword">end</span>
+0046     <span class="keyword">otherwise</span> 
+0047       <span class="keyword">if</span> size(graph.components{compind}.adj,1)&gt;1 <span class="comment">% unless this is first split</span>
+0048         seedpairs = [seedpairs; fliplr(seedpairs)];
+0049       <span class="keyword">end</span>
+0050   <span class="keyword">end</span>
+0051 <span class="keyword">end</span>
+0052</pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

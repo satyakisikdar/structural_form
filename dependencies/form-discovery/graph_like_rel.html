@@ -1,0 +1,210 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of graph_like_rel</title>
+  <meta name="keywords" content="graph_like_rel">
+  <meta name="description" content="graph_like_rel(data, adj, beta, sigma): compute log p(DATA|GRAPH), where">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>graph_like_rel
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>graph_like_rel(data, adj, beta, sigma): compute log p(DATA|GRAPH), where</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [logI graph] = graph_like_rel(data, graph, ps) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> graph_like_rel(data, adj, beta, sigma): compute log p(DATA|GRAPH), where
+   D is a relational data set</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="bblikesumhyps.html" class="code" title="function ll = bblikesumhyps(ys, ns, alphas, betas)">bblikesumhyps</a>	Compute log probability of data (YS, NS) under beta binomial model</li><li><a href="countmatrix.html" class="code" title="function counts = countmatrix(data, graph)">countmatrix</a>	GRAPH includes entities that are assigned to clusters. COUNTS specifies</li><li><a href="filloutrelgraph.html" class="code" title="function graph = filloutrelgraph(graph)">filloutrelgraph</a>	make graph transitive</li><li><a href="makehyps.html" class="code" title="function [alphas betas]=makehyps(props, sums)">makehyps</a>	Make a grid of parameters given proportions PROPS and sums SUMS</li><li><a href="rellikebin.html" class="code" title="function ll = rellikebin(countvec, adjvec, sizevec, mags, thetas)">rellikebin</a>	Compute probability of the data under the model for binary relations.</li><li><a href="rellikefreqs.html" class="code" title="function ll = rellikefreqs(countvec, adjvec, sizevec, alphas, betas)">rellikefreqs</a>	Compute probability of the data under the (relational) frequency model.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="graph_like.html" class="code" title="function [logI graph] = graph_like(data, graph, ps)">graph_like</a>	graph_like(data, adj, beta, sigma): compute log p(DATA|GRAPH)</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [logI graph] = graph_like_rel(data, graph, ps)</a>
+0002 
+0003 <span class="comment">% graph_like_rel(data, adj, beta, sigma): compute log p(DATA|GRAPH), where</span>
+0004 <span class="comment">%   D is a relational data set</span>
+0005 
+0006 origgraph = graph;
+0007 
+0008 <span class="keyword">switch</span> graph.type
+0009   <span class="keyword">case</span>{<span class="string">'order'</span>, <span class="string">'domtree'</span>, <span class="string">'ordernoself'</span>, <span class="string">'dirdomtreenoself'</span>, <span class="string">'undirdomtree'</span>, <span class="string">'undirdomtreenoself'</span>, <span class="string">'connected'</span>, <span class="string">'connectednoself'</span>}
+0010     <span class="comment">% For these forms we only store the &quot;backbone&quot; of a transitive graph</span>
+0011     <span class="comment">% -- so reconstruct the full transitive graph</span>
+0012     graph = <a href="filloutrelgraph.html" class="code" title="function graph = filloutrelgraph(graph)">filloutrelgraph</a>(graph);
+0013 <span class="keyword">end</span>
+0014 
+0015 nobj = graph.objcount;
+0016 nclust = size(graph.adj,1)-nobj;
+0017 <span class="keyword">for</span> i=1:nclust
+0018   clustmembers{i}=find(graph.z==i);
+0019 <span class="keyword">end</span>
+0020 
+0021 <span class="keyword">switch</span> data.type 
+0022   <span class="keyword">case</span> <span class="string">'reldom'</span> <span class="comment">% Not currently used</span>
+0023     edgepropsteps = 5; edgesumsteps = 5; edgeoffset=0;
+0024     edgeprops = (1:edgepropsteps)/edgepropsteps - 1/(2*edgepropsteps);
+0025     edgesums = 2.^(edgeoffset+1:edgeoffset+edgesumsteps);
+0026     [alphas betas]=<a href="makehyps.html" class="code" title="function [alphas betas]=makehyps(props, sums)">makehyps</a>(edgeprops, edgesums);
+0027 
+0028     noedgeprops = 0.5; noedgesums=2.^(-3:2); 
+0029     [alphasnoedge betasnoedge]=<a href="makehyps.html" class="code" title="function [alphas betas]=makehyps(props, sums)">makehyps</a>(noedgeprops, noedgesums);
+0030     
+0031     <span class="keyword">for</span> i=1:nclust
+0032       <span class="keyword">for</span> j=1:nclust
+0033         yobs(i,j) = sum(sum(data.R(clustmembers{i}, clustmembers{j},1)));
+0034         nobs(i,j) = sum(sum(data.R(clustmembers{i}, clustmembers{j},2)));
+0035       <span class="keyword">end</span>
+0036     <span class="keyword">end</span>
+0037 
+0038     clustgraph = graph.adjcluster;
+0039     edgeones =  find(clustgraph); edgezeros = find(1-clustgraph);
+0040     orig.yobs=yobs;
+0041     orig.nobs=nobs;
+0042     orig.clustgraph = clustgraph;
+0043 
+0044     <span class="keyword">if</span> data.lowdiag
+0045       <span class="keyword">if</span> sum(diag(data.R(:,:,2)))&gt;0
+0046         error(<span class="string">'data not lower diagonal!'</span>);
+0047       <span class="keyword">end</span>
+0048 
+0049       <span class="comment">% cases for which no prediction is made</span>
+0050       <span class="comment">%        within cluster probs, (a,b)</span>
+0051       <span class="comment">%        relationships when there's no edge between a and b</span>
+0052 
+0053       doubgraph = clustgraph+clustgraph';
+0054       doubgraph = doubgraph+eps*tril(ones(size(clustgraph)), -1);
+0055       nopreds = find(doubgraph==0 | doubgraph==2);
+0056       diagind = sub2ind(size(clustgraph), 1:nclust, 1:nclust);
+0057       nopredys = yobs; nopredns = nobs;
+0058       nopredys(diagind) = yobs(diagind)/2; nopredns(diagind) = nobs(diagind)/2; 
+0059       yobsnopreds = nopredys(nopreds); nobsnopreds = nopredns(nopreds);
+0060       lognopredI = 0 ;
+0061       <span class="keyword">if</span> ~isempty(nobsnopreds(nobsnopreds&gt;0));
+0062         lognopredI = <a href="bblikesumhyps.html" class="code" title="function ll = bblikesumhyps(ys, ns, alphas, betas)">bblikesumhyps</a>(yobsnopreds, nobsnopreds, alphasnoedge,<span class="keyword">...</span>
+0063                    betasnoedge); 
+0064       <span class="keyword">end</span>
+0065 
+0066       clustgraphtmp = clustgraph + eps*tril(ones(size(clustgraph)));
+0067       clustgraphtmp(nopreds) = clustgraphtmp(nopreds)+eps;
+0068 
+0069       edgeones =  find(clustgraphtmp==1); edgezeros = find(clustgraphtmp==0);
+0070       yobs(edgezeros)=nobs(edgezeros)-yobs(edgezeros);
+0071       edgeones = [edgezeros; edgeones]; edgezeros=[];
+0072     <span class="keyword">end</span>
+0073 
+0074     ysones = yobs(edgeones); nsones=nobs(edgeones);
+0075     yszeros = yobs(edgezeros); nszeros=nobs(edgezeros);
+0076     
+0077     logI1 = 0; logI2 = 0;
+0078     <span class="keyword">if</span> ~isempty(nsones(nsones&gt;0));
+0079       logI1 = <a href="bblikesumhyps.html" class="code" title="function ll = bblikesumhyps(ys, ns, alphas, betas)">bblikesumhyps</a>(ysones, nsones, alphas, betas); 
+0080     <span class="keyword">end</span>
+0081     <span class="keyword">if</span> ~isempty(nszeros(nszeros&gt;0));
+0082       logI2 = <a href="bblikesumhyps.html" class="code" title="function ll = bblikesumhyps(ys, ns, alphas, betas)">bblikesumhyps</a>(yszeros, nszeros, alphas, betas);
+0083     <span class="keyword">end</span>
+0084     logI = logI1+logI2;
+0085 
+0086     <span class="keyword">if</span> data.lowdiag
+0087       logI = logI+lognopredI;
+0088     <span class="keyword">end</span>
+0089 
+0090     <span class="comment">% for a two cluster graph, can't get the edge direction right since we have</span>
+0091     <span class="comment">% a flat prior over \theta_edge and \theta_noedge</span>
+0092     nclustedges = sum(sum(clustgraph));
+0093     <span class="keyword">if</span> (size(clustgraph,1)==2 &amp;&amp; nclustedges==1) 
+0094       [r c]= find(clustgraph==1);
+0095       <span class="keyword">if</span> nobs(c,r) &gt; 0 &amp;&amp; yobs(c,r)/nobs(c,r) &gt; yobs(r,c)/nobs(r,c)
+0096         graph.adj(nobj+1:<span class="keyword">end</span>, nobj+1:end) = clustgraph';
+0097       <span class="keyword">end</span>
+0098     <span class="keyword">end</span>
+0099   <span class="keyword">case</span> {<span class="string">'relfreq'</span>, <span class="string">'relbin'</span>}  
+0100     <span class="comment">%     RELFREQ: data show frequencies of directed interactions between</span>
+0101     <span class="comment">%        individuals</span>
+0102     <span class="comment">%     RELBIN: a directed matrix (binary)</span>
+0103 
+0104     z = graph.z; z = z(z&gt;=0);
+0105     classsizes = hist(z, 1:nclust);
+0106     sizematrix= repmat(classsizes, nclust, 1).*repmat(classsizes', 1, nclust);
+0107     <span class="comment">% self links  aren't allowed ...</span>
+0108     diagind = sub2ind([nclust, nclust], 1:nclust, 1:nclust);
+0109     sizematrix(diagind) = sizematrix(diagind) - classsizes;
+0110     <span class="keyword">switch</span> graph.type
+0111       <span class="keyword">case</span>{<span class="string">'partition'</span>, <span class="string">'order'</span>, <span class="string">'dirchain'</span>, <span class="string">'dirring'</span>, <span class="string">'dirhierarchy'</span>,<span class="keyword">...</span>
+0112        <span class="string">'domtree'</span>, <span class="string">'connected'</span> <span class="string">'undirchain'</span>, <span class="string">'undirring'</span>, <span class="keyword">...</span>
+0113        <span class="string">'undirhierarchy'</span>, <span class="string">'undirdomtree'</span>}
+0114         <span class="comment">% ... but some forms expect links within classes</span>
+0115     graph.adjcluster(diagind) = 1;
+0116     <span class="keyword">end</span>
+0117 
+0118     <span class="keyword">switch</span> graph.type
+0119       <span class="keyword">case</span>{<span class="string">'undirchain'</span>, <span class="string">'undirring'</span>, <span class="string">'undirhierarchy'</span>, <span class="string">'undirdomtree'</span>, <span class="keyword">...</span>
+0120       <span class="string">'undirchainnoself'</span>, <span class="string">'undirringnoself'</span>, <span class="string">'undirhierarchynoself'</span>, <span class="keyword">...</span>
+0121       <span class="string">'undirdomtreenoself'</span>}
+0122         <span class="comment">% ... and others expect links to be symmetric</span>
+0123     graph.adjcluster = graph.adjcluster | graph.adjcluster';
+0124     <span class="keyword">end</span>
+0125 
+0126     classcounts = <a href="countmatrix.html" class="code" title="function counts = countmatrix(data, graph)">countmatrix</a>(data.R, graph); countvec= classcounts(:);
+0127     adjvec = graph.adjcluster(:); 
+0128     sizevec = sizematrix(:);
+0129 
+0130     <span class="comment">%we know that edges in adj encourage links</span>
+0131     edgepropsteps = 5; edgesumsteps = ps.edgesumsteps;
+0132     edgeoffset=ps.edgeoffset;
+0133     edgesums = ps.edgesumlambda.^(edgeoffset+1:edgeoffset+edgesumsteps);
+0134     edgeprops = (edgepropsteps+1:2*edgepropsteps)/(2*edgepropsteps) -<span class="keyword">...</span>
+0135          1/(4*edgepropsteps);
+0136     noedgeprops = (1:edgepropsteps)/(2*edgepropsteps)-1/(4*edgepropsteps);
+0137 
+0138     [alphasedge betasedge]=<a href="makehyps.html" class="code" title="function [alphas betas]=makehyps(props, sums)">makehyps</a>(edgeprops, edgesums);
+0139     [alphasnoedge betasnoedge]=<a href="makehyps.html" class="code" title="function [alphas betas]=makehyps(props, sums)">makehyps</a>(noedgeprops, edgesums);
+0140 
+0141     <span class="comment">% for binary data</span>
+0142     edgepropsteps = 10; edgesumsteps = ps.edgesumsteps;
+0143     edgeoffset=ps.edgeoffset;
+0144     mags= ps.edgesumlambda.^(edgeoffset+1:edgeoffset+edgesumsteps);
+0145 
+0146     thetas  = (1:edgepropsteps)/edgepropsteps-1/(2*edgepropsteps);
+0147 
+0148     <span class="keyword">switch</span> data.type
+0149       <span class="keyword">case</span>{<span class="string">'relbin'</span>}
+0150         logI = <a href="rellikebin.html" class="code" title="function ll = rellikebin(countvec, adjvec, sizevec, mags, thetas)">rellikebin</a>(countvec, adjvec, sizevec, mags', thetas'); 
+0151       <span class="keyword">case</span>{<span class="string">'relfreq'</span>}
+0152         logI = <a href="rellikefreqs.html" class="code" title="function ll = rellikefreqs(countvec, adjvec, sizevec, alphas, betas)">rellikefreqs</a>(countvec', adjvec', sizevec', <span class="keyword">...</span>
+0153                         alphasedge', betasedge'); 
+0154     <span class="keyword">end</span>
+0155   <span class="keyword">otherwise</span>
+0156     error(<span class="string">'unknown relational type'</span>)
+0157 <span class="keyword">end</span>
+0158 
+0159 <span class="keyword">if</span> isinf(logI) || isnan(logI)
+0160  keyboard
+0161 <span class="keyword">end</span>
+0162 graph = origgraph;
+0163</pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

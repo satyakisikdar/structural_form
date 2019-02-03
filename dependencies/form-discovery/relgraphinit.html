@@ -1,0 +1,191 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of relgraphinit</title>
+  <meta name="keywords" content="relgraphinit">
+  <meta name="description" content="Create initial graph for relational data set DATA by using various">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>relgraphinit
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Create initial graph for relational data set DATA by using various</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function graph = relgraphinit(data, z, ps) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Create initial graph for relational data set DATA by using various
+ heuristics</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="combinegraphs.html" class="code" title="function graph = combinegraphs(graph, ps, varargin)">combinegraphs</a>	create direct product of components in graph.</li><li><a href="expand_graph.html" class="code" title="function [newadj, objcount]=expand_graph(adj, zs, type)">expand_graph</a>	ADJ: a graph over clusters.</li><li><a href="get_edgemap.html" class="code" title="function emap = get_edgemap(adj, varargin)">get_edgemap</a>	Create an edge map (EMAP) which associates each edge in ADJ with a</li><li><a href="makeemptygraph.html" class="code" title="function graph  = makeemptygraph(ps)">makeemptygraph</a>	Make a graph with one cluster and no objects.</li><li><a href="makelcfreq.html" class="code" title="function lc = makelcfreq(R, zs);">makelcfreq</a>	</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="runmodel.html" class="code" title="function [ll, graph, names, bestglls, bestgraph] = runmodel(ps, sind,dind, rind, savefile)">runmodel</a>	Given data set DIND, find the best instance of form SIND.</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function [head, tail, used] = chooseinithead(lc, lcprop, graph)</a></li><li><a href="#_sub2" class="code">function [graph, head, tail, used] =</a></li><li><a href="#_sub3" class="code">function graph = finishgraph(graph, head, tail);</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function graph = relgraphinit(data, z, ps)</a>
+0002 
+0003 <span class="comment">% Create initial graph for relational data set DATA by using various</span>
+0004 <span class="comment">% heuristics</span>
+0005 
+0006 
+0007 <span class="keyword">switch</span> ps.runps.structname
+0008     <span class="keyword">case</span>{<span class="string">'undirchain'</span>, <span class="string">'undirring'</span>, <span class="string">'undirhierarchy'</span>, <span class="keyword">...</span>
+0009          <span class="string">'undirchainnoself'</span>, <span class="string">'undirringnoself'</span>, <span class="string">'undirhierarchynoself'</span>} 
+0010       <span class="comment">% so that our greedy algorithm considers counts in both directions along</span>
+0011       <span class="comment">% each edge</span>
+0012       data = data + data';
+0013 <span class="keyword">end</span>
+0014 
+0015 
+0016 lc = <a href="makelcfreq.html" class="code" title="function lc = makelcfreq(R, zs);">makelcfreq</a>(data, z);
+0017 nclust = length(unique(z));
+0018 counts = hist(z, unique(z));
+0019 totobs = repmat(counts, nclust, 1).*repmat(counts', 1, nclust);
+0020 <span class="comment">% counts on diagonal shouldn't influence the structure we choose</span>
+0021 lc(sub2ind(size(lc), 1:nclust, 1:nclust)) = 0;
+0022 lcprop = lc./totobs;
+0023 
+0024 <span class="keyword">for</span> i = unique(z)
+0025   zs{i} = find(z == i);
+0026 <span class="keyword">end</span>
+0027 
+0028 graph = <a href="makeemptygraph.html" class="code" title="function graph  = makeemptygraph(ps)">makeemptygraph</a>(ps);
+0029 graph.z = z;
+0030 graph.adjcluster = zeros(nclust); graph.adjclustersym = zeros(nclust);
+0031 graph.adj=<a href="expand_graph.html" class="code" title="function [newadj, objcount]=expand_graph(adj, zs, type)">expand_graph</a>(zeros(nclust), zs, ps.runps.type);
+0032 graph.Wcluster = zeros(nclust);
+0033 graph.W = graph.adj;
+0034 
+0035 [head, tail, used] = <a href="#_sub1" class="code" title="subfunction [head, tail, used] = chooseinithead(lc, lcprop, graph)">chooseinithead</a>(lc, lcprop, graph);
+0036 <span class="keyword">for</span> i = 2:nclust
+0037   [graph, head, tail, used] = growgraph(graph, head, tail, used, lc, lcprop);
+0038 <span class="keyword">end</span>
+0039 graph = <a href="#_sub3" class="code" title="subfunction graph = finishgraph(graph, head, tail);">finishgraph</a>(graph, head, tail);
+0040 
+0041 graph.components{1}.adj = graph.adjcluster;
+0042 graph.components{1}.adjsym = graph.adjcluster | graph.adjcluster';
+0043 graph.components{1}.W   = graph.adjcluster;
+0044 graph.components{1}.Wsym   = graph.adjclustersym;
+0045 graph.components{1}.z= z;
+0046 graph.components{1}.nodecount = nclust;
+0047 graph.components{1}.nodemap= 1:nclust;
+0048 graph.components{1}.edgemap= <a href="get_edgemap.html" class="code" title="function emap = get_edgemap(adj, varargin)">get_edgemap</a>(graph.components{1}.adj);
+0049 graph = <a href="combinegraphs.html" class="code" title="function graph = combinegraphs(graph, ps, varargin)">combinegraphs</a>(graph, ps);
+0050 
+0051 <span class="comment">%------------------------------------------------------------------------------</span>
+0052 <a name="_sub1" href="#_subfunctions" class="code">function [head, tail, used] = chooseinithead(lc, lcprop, graph)</a>
+0053 
+0054 <span class="keyword">if</span> 0
+0055 head = [];
+0056 [m,mind] = max(sum(lcprop, 2));
+0057 tail = mind;
+0058 head = tail;
+0059 used(tail) = 1;
+0060 <span class="keyword">end</span>
+0061 
+0062 used = zeros(size(lc,1),1);
+0063 <span class="keyword">switch</span> graph.type
+0064   <span class="keyword">case</span>{<span class="string">'order'</span>, <span class="string">'ordernoself'</span>, <span class="string">'domtree'</span>, <span class="string">'dirdomtreenoself'</span>,<span class="keyword">...</span>
+0065        <span class="string">'undirdomtree'</span>, <span class="string">'undirdomtreenoself'</span>}
+0066     head = [];
+0067     [m,mind] = max(sum(lcprop, 2));
+0068     tail = mind;
+0069     used(tail) = 1;
+0070   <span class="keyword">otherwise</span>
+0071     [head, tail] = find(lcprop == max(lcprop(:)));
+0072     head = head(1);
+0073     tail = head;
+0074     used(head) = 1;
+0075 <span class="keyword">end</span>
+0076     
+0077 <span class="comment">%------------------------------------------------------------------------------</span>
+0078 <a name="_sub2" href="#_subfunctions" class="code">function [graph, head, tail, used] = </a><span class="keyword">...</span>
+0079                 growgraph(graph, head, tail, used, lc, lcprop)
+0080 
+0081 unused = find(used == 0);
+0082 <span class="keyword">switch</span> graph.type
+0083   <span class="keyword">case</span>{<span class="string">'partition'</span>, <span class="string">'partitionnoself'</span>}
+0084   <span class="keyword">case</span>{<span class="string">'dirchain'</span>, <span class="string">'dirchainnoself'</span>, <span class="string">'dirring'</span>, <span class="string">'dirringnoself'</span>,<span class="keyword">...</span>
+0085        <span class="string">'dirhierarchy'</span>, <span class="string">'dirhierarchynoself'</span>,<span class="keyword">...</span>
+0086        <span class="string">'undirchain'</span>, <span class="string">'undirchainnoself'</span>, <span class="string">'undirring'</span>, <span class="string">'undirringnoself'</span>,<span class="keyword">...</span>
+0087        <span class="string">'undirhierarchy'</span>, <span class="string">'undirhierarchynoself'</span>}
+0088       headlinks = lcprop(unused, head); hlmax = max(headlinks(:));
+0089       taillinks = lcprop(tail, unused); tlmax = max(taillinks(:));
+0090       <span class="keyword">if</span> hlmax &gt; tlmax
+0091         [h1, t1] = find(headlinks == hlmax);
+0092     h1 = h1(1); t1 = t1(1);
+0093         h = unused(h1); t = head(t1);
+0094         graph.adjcluster(h, t) = 1;
+0095         newhead = h; newtail = [];
+0096       <span class="keyword">else</span>
+0097        [h1, t1] = find(taillinks== tlmax);
+0098     h1 = h1(1); t1 = t1(1);
+0099         h = tail(h1); t = unused(t1);
+0100         graph.adjcluster(h, t) = 1;
+0101         newhead = []; newtail = t;
+0102       <span class="keyword">end</span>
+0103       used([newhead, newtail]) = 1;
+0104       <span class="keyword">switch</span> graph.type
+0105         <span class="keyword">case</span>{<span class="string">'dirhierarchy'</span>, <span class="string">'dirhierarchynoself'</span>, <span class="string">'undirhierarchy'</span>, <span class="keyword">...</span>
+0106          <span class="string">'undirhierarchynoself'</span>}
+0107       <span class="keyword">if</span> ~isempty(newhead) <span class="comment">% only one head allowed to avoid mult connected</span>
+0108         head = newhead;
+0109         tail = [tail, head];
+0110           <span class="keyword">else</span> 
+0111         tail = [tail, newtail];
+0112           <span class="keyword">end</span>
+0113     <span class="keyword">otherwise</span>
+0114       <span class="keyword">if</span> isempty(newhead)
+0115          tail = newtail;
+0116       <span class="keyword">else</span>
+0117          head = newhead;
+0118       <span class="keyword">end</span>
+0119       <span class="keyword">end</span>
+0120   <span class="keyword">case</span>{<span class="string">'order'</span>, <span class="string">'ordernoself'</span>}
+0121     [m,mind] = max(sum(lcprop(unused, unused), 2));
+0122     t = unused(mind);
+0123     graph.adjcluster(tail, t) = 1;
+0124     used(t) = 1;
+0125     tail = t;
+0126   <span class="keyword">case</span>{<span class="string">'domtree'</span>, <span class="string">'dirdomtreenoself'</span>, <span class="string">'undirdomtree'</span>, <span class="string">'undirdomtreenoself'</span>}
+0127     <span class="comment">% greedy search should work OK for domtree</span>
+0128     error(<span class="string">'init not implemented for domtree'</span>);
+0129   <span class="keyword">otherwise</span>
+0130     error(<span class="string">'unexpected structure type'</span>);
+0131 <span class="keyword">end</span>
+0132 
+0133 <span class="comment">%------------------------------------------------------------------------------</span>
+0134 <a name="_sub3" href="#_subfunctions" class="code">function graph = finishgraph(graph, head, tail);</a>
+0135 <span class="keyword">switch</span> graph.type
+0136   <span class="keyword">case</span>{<span class="string">'dirring'</span>, <span class="string">'dirringnoself'</span>, <span class="string">'undirring'</span>, <span class="string">'undirringnoself'</span>}
+0137     <span class="keyword">if</span> tail ~= head
+0138       graph.adjcluster(tail,head)=1;
+0139     <span class="keyword">end</span>
+0140   <span class="keyword">otherwise</span>
+0141 <span class="keyword">end</span>
+0142</pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of setps</title>
+  <meta name="keywords" content="setps">
+  <meta name="description" content="">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>setps
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong></strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function ps = setps() </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"></pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="masterrun.html" class="code" title="">masterrun</a>	Charles Kemp, 2008</li><li><a href="zinit_rel.html" class="code" title="">zinit_rel</a>	Pull out results on partitionnoself to initialize searches for relational</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function ps = setps()</a>
+0002 
+0003 ps.structures = {<span class="string">'partition'</span>, <span class="string">'chain'</span>, <span class="string">'order'</span>, <span class="string">'ring'</span>, <span class="string">'hierarchy'</span>,<span class="keyword">...</span>
+0004              <span class="string">'tree'</span>, <span class="string">'grid'</span>, <span class="string">'cylinder'</span>,<span class="keyword">...</span>
+0005     <span class="string">'partitionnoself'</span>,<span class="keyword">...</span>
+0006     <span class="string">'dirchain'</span>, <span class="string">'dirchainnoself'</span>, <span class="string">'undirchain'</span>, <span class="string">'undirchainnoself'</span>,<span class="keyword">...</span>
+0007     <span class="string">'ordernoself'</span>, <span class="string">'connected'</span>, <span class="string">'connectednoself'</span>,<span class="keyword">...</span><span class="comment">  </span>
+0008     <span class="string">'dirring'</span>, <span class="string">'dirringnoself'</span>, <span class="string">'undirring'</span>, <span class="string">'undirringnoself'</span>,<span class="keyword">...</span>
+0009     <span class="string">'dirhierarchy'</span>, <span class="string">'dirhierarchynoself'</span>, <span class="string">'undirhierarchy'</span>, <span class="string">'undirhierarchynoself'</span>,<span class="keyword">...</span>
+0010     };
+0011 
+0012 ps.data          = {<span class="string">'demo_chain_feat'</span>, <span class="string">'demo_ring_feat'</span>,<span class="keyword">...</span>
+0013          <span class="string">'demo_tree_feat'</span>, <span class="string">'demo_ring_rel_bin'</span>,<span class="keyword">...</span>
+0014          <span class="string">'demo_hierarchy_rel_bin'</span>, <span class="string">'demo_order_rel_freq'</span>,<span class="keyword">...</span>
+0015          <span class="string">'synthpartition'</span>, <span class="string">'synthchain'</span>, <span class="string">'synthring'</span>,<span class="keyword">...</span>
+0016          <span class="string">'synthtree'</span>, <span class="string">'synthgrid'</span>, <span class="string">'animals'</span>,<span class="keyword">...</span>
+0017          <span class="string">'judges'</span>, <span class="string">'colors'</span>, <span class="string">'faces'</span>, <span class="string">'cities'</span>,<span class="keyword">...</span>
+0018          <span class="string">'mangabeys'</span>,<span class="string">'bushcabinet'</span>, <span class="string">'kularing'</span>,<span class="keyword">...</span>
+0019          <span class="string">'prisoners'</span>};
+0020 
+0021 ps.repeats    = ones(1,length(ps.data));
+0022 
+0023 <span class="comment">% locations of data files</span>
+0024 
+0025 b = [pwd, <span class="string">'/data/'</span>]; 
+0026 
+0027 ps.dlocs      = {[b, <span class="string">'demo_chain_feat'</span>], [b, <span class="string">'demo_ring_feat'</span>],<span class="keyword">...</span>
+0028          [b, <span class="string">'demo_tree_feat'</span>], [b, <span class="string">'demo_ring_rel_bin'</span>],<span class="keyword">...</span>
+0029          [b, <span class="string">'demo_hierarchy_rel_bin'</span>], [b, <span class="string">'demo_order_rel_freq'</span>],<span class="keyword">...</span>
+0030          [b, <span class="string">'synthpartition'</span>], [b, <span class="string">'synthchain'</span>], [b, <span class="string">'synthring'</span>],<span class="keyword">...</span>
+0031          [b, <span class="string">'synthtree'</span>], [b, <span class="string">'synthgrid'</span>], [b, <span class="string">'animals'</span>],<span class="keyword">...</span>
+0032          [b, <span class="string">'judges'</span>], [b, <span class="string">'colors'</span>], [b, <span class="string">'faces'</span>], [b, <span class="string">'cities'</span>],<span class="keyword">...</span>
+0033          [b, <span class="string">'mangabeys'</span>], [b, <span class="string">'bushcabinet'</span>], [b, <span class="string">'kularing'</span>],<span class="keyword">...</span>
+0034          [b, <span class="string">'prisoners'</span>]};
+0035 
+0036 <span class="comment">% Effective number of features for Similarity data</span>
+0037 ps.simdim = {};
+0038 <span class="keyword">for</span> i=1:length(ps.data)
+0039   ps.simdim{i} = 1000;
+0040 <span class="keyword">end</span>
+0041 
+0042</pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

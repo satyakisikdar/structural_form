@@ -1,0 +1,147 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of defaultps</title>
+  <meta name="keywords" content="defaultps">
+  <meta name="description" content="Default settings of all parameters">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>defaultps
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Default settings of all parameters</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function ps = defaultps(ps) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Default settings of all parameters</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="masterrun.html" class="code" title="">masterrun</a>	Charles Kemp, 2008</li><li><a href="zinit_rel.html" class="code" title="">zinit_rel</a>	Pull out results on partitionnoself to initialize searches for relational</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function ps = defaultps(ps)</a>
+0002 
+0003 <span class="comment">% Default settings of all parameters</span>
+0004 
+0005 <span class="comment">%% HYPERPARAMETERS</span>
+0006 ps.lbeta     = 0.4; <span class="comment">% parameter for exponential prior on branch-lengths</span>
+0007             <span class="comment">% lbeta is expected branch length</span>
+0008 ps.sigbeta   = 0.4; <span class="comment">% parameter for exponential prior on 1/sigma</span>
+0009             <span class="comment">% sigbeta is expected value of 1/sigma</span>
+0010 ps.sigmainit = 1/ps.sigbeta;   <span class="comment">% initial value for regularization parameter</span>
+0011 ps.theta     = (1-exp(-3));  <span class="comment">% each additional node reduces prior by 3</span>
+0012 
+0013 
+0014 <span class="comment">% DATA  -- which (if any) pre-processing steps to apply</span>
+0015 <span class="comment">% Feature data: simpleshiftscale -- make data zero mean, ensure that max</span>
+0016 <span class="comment">%                    entry in the covariance matrix is 1</span>
+0017 <span class="comment">%        makesimlike      -- transform data so that the largest</span>
+0018 <span class="comment">%                    entry in the covariance matrix is 1, and the</span>
+0019 <span class="comment">%                        smallest entry is 0</span>
+0020 <span class="comment">%            none         -- no pre-processing</span>
+0021 
+0022 <span class="comment">% Similarity data:  center     -- center the similarity matrix</span>
+0023 <span class="comment">%            none     -- no pre-processing</span>
+0024 
+0025 
+0026 ps.datatransform = <span class="string">'simpleshiftscale'</span>; <span class="comment">% none, makesimlike</span>
+0027 ps.simtransform  = <span class="string">'none'</span>;           <span class="comment">% none, center</span>
+0028 
+0029 <span class="comment">%% DISPLAY</span>
+0030 ps.showtruegraph     = 0; <span class="comment">% show true graph. For artificial data only</span>
+0031 ps.showinferredgraph = 0; <span class="comment">% show inferred graph</span>
+0032 ps.showbestsplit     = 0; <span class="comment">% picture each time a node is split</span>
+0033 ps.showpreclean         = 0; <span class="comment">% show best graph  (pre cleaning) at each depth</span>
+0034 ps.showpostclean     = 0; <span class="comment">% show best graph (post cleaning) at each depth</span>
+0035 
+0036 <span class="comment">% SPEED</span>
+0037 <span class="comment">% Optimizing the branch lengths is slow, and these options specify when</span>
+0038 <span class="comment">% this step will take place.</span>
+0039 
+0040 <span class="comment">% 1: optimize branch lengths everywhere</span>
+0041 <span class="comment">% 2: optimize branch lengths once a node has been fully split</span>
+0042 <span class="comment">% 23: start out at 3 and finish at 2</span>
+0043 <span class="comment">% 3: only optimize branch lengths once the best split has been chosen</span>
+0044 <span class="comment">% 4: only optimize branch lengths once per depth</span>
+0045 <span class="comment">% 5: maximize approximate score (only optimize branch lengths as a heuristic if</span>
+0046 <span class="comment">%                 search is otherwise finished)</span>
+0047 <span class="comment">% 54: speed 5 then 4</span>
+0048 ps.speed = 54;
+0049 
+0050 <span class="comment">% CONSTRAINTS ON THE BRANCH LENGTHS</span>
+0051 <span class="comment">% external branches join entities to clusters.</span>
+0052 <span class="comment">% internal branches join clusters to clusters</span>
+0053 
+0054 ps.fixedall         = 0;    <span class="comment">% all branch lengths must be identical</span>
+0055 ps.fixedinternal     = 0;    <span class="comment">% internal branch lengths must be identical</span>
+0056 ps.fixedexternal     = 0;    <span class="comment">% external branch lengths must be identical</span>
+0057 ps.prodtied         = 0;    <span class="comment">% each branch length in a &quot;direct product&quot;</span>
+0058                 <span class="comment">% graph (e.g. a grid) must equal the</span>
+0059                 <span class="comment">% corresponding branch length from the</span>
+0060                 <span class="comment">% corresponding component graph.</span>
+0061 
+0062 <span class="comment">% Search strategies:</span>
+0063 <span class="comment">%   intext   -- start with ps.fixedinternal = 1, ps.fixedexternal = 1</span>
+0064 <span class="comment">%            then just ps.fixedexternal = 1.</span>
+0065 <span class="comment">%            then remove all branch length constraints.</span>
+0066 
+0067 ps.init             = <span class="string">'intext'</span>; <span class="comment">% none, ext, int, intext, fixedall</span>
+0068 
+0069 <span class="comment">% OTHER</span>
+0070 ps.gibbsclean = 1  ;        <span class="comment">% use heuristics to improve graph after each split</span>
+0071 ps.nauty= 0  ;            <span class="comment">% is nauty installed? If so we'll save some</span>
+0072                 <span class="comment">% time by only considering near misses up to</span>
+0073                 <span class="comment">% isomorphism. Results in the PNAS paper</span>
+0074                 <span class="comment">% were generated with this set to 1. It's not</span>
+0075                 <span class="comment">% set to 0 for users who don't have nauty</span>
+0076                 <span class="comment">% installed --- this might slow down the code</span>
+0077                 <span class="comment">% but shouldn't change the results.</span>
+0078 ps.outsideinit = <span class="string">''</span>;        <span class="comment">% initialize with outside graph</span>
+0079 ps.zglreg = 0;            <span class="comment">% regularize like Zhu, Ghahramani and Lafferty</span>
+0080                 <span class="comment">%        suggest (add terms along the entire</span>
+0081                 <span class="comment">%        diagonal of the precision matrix</span>
+0082 ps.featforce = 0;        <span class="comment">% a square matrix is treated by default as a</span>
+0083                 <span class="comment">%       similarity matrix. Set this flag to</span>
+0084                 <span class="comment">%        analyze a square feature matrix.</span>
+0085 
+0086 <span class="comment">% We integrate out the parameters of the relational model. The next three</span>
+0087 <span class="comment">% parameters set up the parameter grid we consider.</span>
+0088 
+0089 ps.edgesumsteps  = 10;        <span class="comment">% number of magnitudes</span>
+0090 ps.edgesumlambda = 2;        <span class="comment">% base of magnitudes</span>
+0091 ps.edgeoffset    =-5;        <span class="comment">% first magnitude is base^offset</span>
+0092 
+0093 <span class="comment">% initializing a relational structure:</span>
+0094 <span class="comment">%   none:     initialize with all objects in one cluster.</span>
+0095 <span class="comment">%   overd:    use a structure created with one object per cluster</span>
+0096 <span class="comment">%   external: use a structure from ps.relinitdir</span>
+0097 
+0098 ps.reloutsideinit=<span class="string">'none'</span>;   
+0099 
+0100 <span class="comment">% Add path to appropriate directory if ps.reloutsideinit = 'external'</span>
+0101 ps.relinitdir= <span class="string">''</span>;</pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

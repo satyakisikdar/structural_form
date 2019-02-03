@@ -1,0 +1,71 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of get_edgemap</title>
+  <meta name="keywords" content="get_edgemap">
+  <meta name="description" content="Create an edge map (EMAP) which associates each edge in ADJ with a">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>get_edgemap
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Create an edge map (EMAP) which associates each edge in ADJ with a</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function emap = get_edgemap(adj, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Create an edge map (EMAP) which associates each edge in ADJ with a
+ number</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="combinegraphs.html" class="code" title="function graph = combinegraphs(graph, ps, varargin)">combinegraphs</a>	create direct product of components in graph.</li><li><a href="relgraphinit.html" class="code" title="function graph = relgraphinit(data, z, ps)">relgraphinit</a>	Create initial graph for relational data set DATA by using various</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function emap = get_edgemap(adj, varargin)</a>
+0002 
+0003 <span class="comment">% Create an edge map (EMAP) which associates each edge in ADJ with a</span>
+0004 <span class="comment">% number</span>
+0005 
+0006 args = varargin;
+0007 symflag =0;
+0008 <span class="keyword">for</span> i=1:2:length(args)
+0009   <span class="keyword">switch</span> args{i}
+0010    <span class="keyword">case</span> <span class="string">'sym'</span>, symflag=args{i+1};
+0011   <span class="keyword">end</span>
+0012 <span class="keyword">end</span>
+0013 
+0014 
+0015 emap = zeros(size(adj));
+0016 <span class="keyword">if</span> symflag
+0017   es = find(tril(adj,-1));
+0018   emap(es)=1:length(es);
+0019   emap = emap+emap';
+0020 <span class="keyword">else</span>
+0021   es = find(adj);
+0022   emap(es)=1:length(es);
+0023 <span class="keyword">end</span>
+0024</pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

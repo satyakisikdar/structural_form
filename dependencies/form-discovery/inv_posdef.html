@@ -1,0 +1,54 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of inv_posdef</title>
+  <meta name="keywords" content="inv_posdef">
+  <meta name="description" content="INV_POSDEF        Invert positive definite matrix.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>inv_posdef
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>INV_POSDEF        Invert positive definite matrix.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function x = inv_posdef(A) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> INV_POSDEF        Invert positive definite matrix.
+ INV_POSDEF(A) is like INV(A) but faster and more numerically stable.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="inv_triu.html" class="code" title="function x = inv_triu(U)">inv_triu</a>	INV_TRIU     Invert upper triangular matrix.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="dataprobwsig.html" class="code" title="function [ll dWvec dWvecprior] = dataprobwsig(Wvec, d, graph, ps)">dataprobwsig</a>	Compute probability P(Wvec|D), where Wvec specifies the edge lengths for</li><li><a href="gplike.html" class="code" title="function ll = gplike(X, G, dim, ps)">gplike</a>	Compute log probability of data X (assume 0 mean) under a Gaussian model</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function x = inv_posdef(A)</a>
+0002 <span class="comment">% INV_POSDEF        Invert positive definite matrix.</span>
+0003 <span class="comment">% INV_POSDEF(A) is like INV(A) but faster and more numerically stable.</span>
+0004 
+0005 U = chol(A);
+0006 iU = <a href="inv_triu.html" class="code" title="function x = inv_triu(U)">inv_triu</a>(U);
+0007 x = iU*iU';</pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

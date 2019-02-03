@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of combineWs</title>
+  <meta name="keywords" content="combineWs">
+  <meta name="description" content="fill in W matrices given the weights in Wvec (graph topology changes nowhere">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>combineWs
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>fill in W matrices given the weights in Wvec (graph topology changes nowhere</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [graph ps] = combineWs(graph, Wvec, ps) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> fill in W matrices given the weights in Wvec (graph topology changes nowhere
+                         -- only weights change)</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="dataprobwsig.html" class="code" title="function [ll dWvec dWvecprior] = dataprobwsig(Wvec, d, graph, ps)">dataprobwsig</a>	Compute probability P(Wvec|D), where Wvec specifies the edge lengths for</li><li><a href="graph_like_conn.html" class="code" title="function [logI graph] = graph_like_conn(data, graph, ps)">graph_like_conn</a>	Compute log P(DATA|GRAPH)</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [graph ps] = combineWs(graph, Wvec, ps) </a>
+0002 
+0003 <span class="comment">% fill in W matrices given the weights in Wvec (graph topology changes nowhere</span>
+0004 <span class="comment">%                         -- only weights change)</span>
+0005 
+0006 leafinds = sub2ind(size(graph.W), graph.objcount+graph.z(graph.z&gt;=0),<span class="keyword">...</span>
+0007            1:graph.objcount);
+0008 
+0009 nobj = graph.objcount;
+0010 W = 0*graph.adjcluster;
+0011 
+0012 extlen = 0; intlen = 0;
+0013 <span class="keyword">if</span> ps.fixedall
+0014   extlen = Wvec(1); intlen = Wvec(1); 
+0015 <span class="keyword">elseif</span> ps.fixedexternal &amp;&amp; ps.fixedinternal
+0016   extlen = Wvec(1); 
+0017   <span class="keyword">if</span> sum(sum(graph.adjcluster))
+0018     intlen = Wvec(2);
+0019   <span class="keyword">else</span>
+0020     intlen = 1;
+0021   <span class="keyword">end</span>
+0022 <span class="keyword">elseif</span> ps.fixedexternal
+0023   extlen = Wvec(1); Wvec = Wvec(2:end);
+0024 <span class="keyword">elseif</span> ps.fixedinternal
+0025   leafweights = Wvec(1:nobj); 
+0026   <span class="keyword">if</span> sum(sum(graph.adjcluster)) 
+0027     intlen = Wvec(nobj+1);
+0028   <span class="keyword">else</span>
+0029     intlen = 1;
+0030   <span class="keyword">end</span>
+0031 <span class="keyword">else</span>
+0032   leafweights= Wvec(1:nobj);
+0033   Wvec = Wvec(nobj+1:end);
+0034 <span class="keyword">end</span> 
+0035 graph.extlen= extlen; graph.intlen= intlen;
+0036 
+0037 <span class="comment">% set up internal lengths</span>
+0038 <span class="keyword">if</span> ps.fixedinternal == 0  &amp;&amp; ~ps.fixedall
+0039   <span class="keyword">if</span> ps.prodtied
+0040     <span class="keyword">for</span> i=1:length(graph.components)
+0041       Ws = Wvec(1:graph.components{i}.edgecountsym);  
+0042       Wvec = Wvec(graph.components{i}.edgecountsym+1:end);
+0043       emap = graph.components{i}.edgemapsym;
+0044       edgeinds = emap(find(emap));
+0045       W(find(emap))= Ws(edgeinds);
+0046       localW = tril(graph.components{i}.adjsym, -1);
+0047       localW(logical(localW)) = Ws;
+0048       graph.components{i}.Wsym = localW+localW';
+0049       graph.components{i}.W = graph.components{i}.adj .* <span class="keyword">...</span>
+0050                   graph.components{i}.Wsym;
+0051     <span class="keyword">end</span>
+0052   <span class="keyword">else</span>
+0053     W = tril(graph.adjclustersym, -1);
+0054     W(find(W)) = Wvec;
+0055     W = W+W';
+0056     <span class="keyword">if</span> graph.ncomp == 1 <span class="comment">% shouldn't need this once we deal with untied products</span>
+0057                 <span class="comment">% properly. But it's essential for now that the</span>
+0058             <span class="comment">% component Ws be accurate.</span>
+0059       graph.components{1}.Wsym = W;
+0060       graph.components{1}.W = W.*graph.components{1}.adj;
+0061     <span class="keyword">end</span>
+0062   <span class="keyword">end</span>
+0063 <span class="keyword">else</span>
+0064   W = intlen*graph.adjclustersym;
+0065 <span class="keyword">end</span>
+0066 graph.Wclustersym = W;
+0067 graph.Wcluster = graph.adjcluster.*W;
+0068 
+0069 <span class="comment">% set up external lengths</span>
+0070 <span class="keyword">if</span> ps.fixedexternal || ps.fixedall
+0071   leafweights = extlen*ones(1, length(leafinds));
+0072 <span class="keyword">end</span>
+0073 
+0074 fullW=zeros(size(W,1)+nobj);
+0075 fullW(leafinds) = leafweights;
+0076 fullWtr = fullW';
+0077 fullW(graph.adj')= fullWtr(graph.adj');
+0078 fullW(nobj+1:<span class="keyword">end</span>, nobj+1:end)=graph.Wclustersym;
+0079 <span class="comment">%graph.Wsym = fullW + fullW - graph.adj.*(fullW);</span>
+0080 graph.Wsym = fullW;
+0081 graph.W = repmat(0, size(fullW));
+0082 graph.W(graph.adj) = fullW(graph.adj);
+0083 graph.leaflengths(graph.z&gt;0) = leafweights;</pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of inv_covariance</title>
+  <meta name="keywords" content="inv_covariance">
+  <meta name="description" content="Compute inverse covariance matrix defined over weighted graph W. We">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>inv_covariance
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Compute inverse covariance matrix defined over weighted graph W. We</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [J L] = inv_covariance(W, nobj, sigma, ps); </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Compute inverse covariance matrix defined over weighted graph W. We
+ basically follow the approach of Zhu, Ghahramani and Lafferty.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="dataprobwsig.html" class="code" title="function [ll dWvec dWvecprior] = dataprobwsig(Wvec, d, graph, ps)">dataprobwsig</a>	Compute probability P(Wvec|D), where Wvec specifies the edge lengths for</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [J L] = inv_covariance(W, nobj, sigma, ps);</a>
+0002 
+0003 <span class="comment">% Compute inverse covariance matrix defined over weighted graph W. We</span>
+0004 <span class="comment">% basically follow the approach of Zhu, Ghahramani and Lafferty.</span>
+0005 
+0006 n = size(W,1);
+0007 D = diag(sum(W, 2));
+0008 L = D-W;
+0009 
+0010 <span class="comment">% prior on object nodes</span>
+0011 P = zeros(n);
+0012 
+0013 <span class="keyword">if</span> ps.zglreg
+0014   P(1:n, 1:n)=1/sigma^2*eye(n);
+0015 <span class="keyword">else</span>
+0016   P(1:nobj, 1:nobj)=1/sigma^2*eye(nobj);
+0017 <span class="keyword">end</span>
+0018 
+0019 <span class="comment">% inverse covariance</span>
+0020 J = L+P;
+0021 
+0022 <span class="comment">% identify holes -- a hack to deal with orphaned cluster nodes lying around</span>
+0023 <span class="comment">% (should remove these)</span>
+0024 adj = W~=0;
+0025 holes = find(sum(adj)==0);
+0026 J(holes, holes)=1;
+0027</pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

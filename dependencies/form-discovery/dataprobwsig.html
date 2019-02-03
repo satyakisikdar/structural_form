@@ -1,0 +1,290 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of dataprobwsig</title>
+  <meta name="keywords" content="dataprobwsig">
+  <meta name="description" content="Compute probability P(Wvec|D), where Wvec specifies the edge lengths for">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>dataprobwsig
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Compute probability P(Wvec|D), where Wvec specifies the edge lengths for</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [ll dWvec dWvecprior] = dataprobwsig(Wvec, d, graph, ps) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Compute probability P(Wvec|D), where Wvec specifies the edge lengths for
+ graph GRAPH and D is a feature or similarity data set.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="combineWs.html" class="code" title="function [graph ps] = combineWs(graph, Wvec, ps)">combineWs</a>	fill in W matrices given the weights in Wvec (graph topology changes nowhere</li><li><a href="dataprobwsig.html" class="code" title="function [ll dWvec dWvecprior] = dataprobwsig(Wvec, d, graph, ps)">dataprobwsig</a>	Compute probability P(Wvec|D), where Wvec specifies the edge lengths for</li><li><a href="extract_weights.html" class="code" title="function [dWvec dWvecprior]= extract_weights(dEdlWa, dEdlWb, dEdlWbprior,dEdlWddata, dEdlWdprior, graph, ps)">extract_weights</a>	Go through gradient matrices (dEdlWa, etc) and pull out dWvec (includes</li><li><a href="gplike.html" class="code" title="function ll = gplike(X, G, dim, ps)">gplike</a>	Compute log probability of data X (assume 0 mean) under a Gaussian model</li><li><a href="inv_covariance.html" class="code" title="function [J L] = inv_covariance(W, nobj, sigma, ps);">inv_covariance</a>	Compute inverse covariance matrix defined over weighted graph W. We</li><li><a href="inv_posdef.html" class="code" title="function x = inv_posdef(A)">inv_posdef</a>	INV_POSDEF        Invert positive definite matrix.</li><li><a href="matrixpartition.html" class="code" title="function [A B C D]=matrixpartition(J, nobjects)">matrixpartition</a>	Chop matrix J into 4 sub matrices</li><li><a href="reordermissing.html" class="code" title="function [graph Wvec]=reordermissing(graph, Wvec, obsind, missind, ps)">reordermissing</a>	shuffle objects OBSIND (entities with missing values) to the end of the</li><li><a href="triplepartition.html" class="code" title="function [A1 A2 B1 B2 D]=triplepartition(J, nobs, nmiss)">triplepartition</a>	</li><li><a href="weightprior.html" class="code" title="function lp = weightprior(w, beta);">weightprior</a>	Compute exponential prior on edge weights.  Remember we're now working</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="dataprobwsig.html" class="code" title="function [ll dWvec dWvecprior] = dataprobwsig(Wvec, d, graph, ps)">dataprobwsig</a>	Compute probability P(Wvec|D), where Wvec specifies the edge lengths for</li><li><a href="graph_like_conn.html" class="code" title="function [logI graph] = graph_like_conn(data, graph, ps)">graph_like_conn</a>	Compute log P(DATA|GRAPH)</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [ll dWvec dWvecprior] = dataprobwsig(Wvec, d, graph, ps)</a>
+0002 
+0003 <span class="comment">% Compute probability P(Wvec|D), where Wvec specifies the edge lengths for</span>
+0004 <span class="comment">% graph GRAPH and D is a feature or similarity data set.</span>
+0005 
+0006 <span class="comment">% LL = -log(p(d|Wvec, graph)p(Wvec));</span>
+0007 <span class="comment">% Wvec: first entry is sigma,</span>
+0008 <span class="comment">%    next chunk is a set of leaf weights</span>
+0009 <span class="comment">%    then follows a chunk of weights for each component</span>
+0010 
+0011 <span class="comment">% d may contain missing entries, but we'll cycle through in chunks and create</span>
+0012 <span class="comment">% new data matrices without missing entries</span>
+0013 
+0014 <span class="comment">% Wvec contains log weights</span>
+0015 logWvec = Wvec;
+0016 Wvec = exp(Wvec);
+0017 
+0018 <span class="comment">% wbeta: parameter for exponential prior on branch lengths</span>
+0019 <span class="comment">% sigbeta: parameter for exponential prior on inverse sigma</span>
+0020 wbeta = ps.lbeta; sigbeta = ps.sigbeta;
+0021 
+0022 pk = 2; <span class="comment">% 2 for exponential: 3 for gamma shape 2</span>
+0023 
+0024 <span class="keyword">if</span> ps.missingdata
+0025   ps.missingdata = 0;
+0026   wpriors = -(<a href="weightprior.html" class="code" title="function lp = weightprior(w, beta);">weightprior</a>(Wvec(2:end), wbeta)+<a href="weightprior.html" class="code" title="function lp = weightprior(w, beta);">weightprior</a>(Wvec(1), sigbeta));
+0027   ll = wpriors; dWvec = 0;
+0028   theseobjs = graph.z&gt;=0;
+0029 
+0030   <span class="keyword">for</span> c = 1:ps.runps.chunknum
+0031     obsind = find(theseobjs &amp; sparse(1,ps.runps.objind{c},1,1,length(graph.z)));
+0032     missind =find(theseobjs &amp;~sparse(1,ps.runps.objind{c},1,1,length(graph.z)));
+0033     currobs = [obsind, missind];
+0034     [s sind] = sort(currobs); [t tind] = sort(sind);
+0035 
+0036     <span class="comment">% shuffle the missing objects for this chunk to the end of the list.</span>
+0037     <span class="comment">% We can then ignore them when computing probability of the data for</span>
+0038     <span class="comment">% this chunk.</span>
+0039     [newgraph newWvec]= <a href="reordermissing.html" class="code" title="function [graph Wvec]=reordermissing(graph, Wvec, obsind, missind, ps)">reordermissing</a>(graph, Wvec, obsind, missind, ps);
+0040     newdata = d(tind(1:length(obsind)),ps.runps.featind{c});
+0041     ps.runps.SS = ps.runps.chunkSS{c}; 
+0042     ps.runps.chunkcount = ps.runps.chunksize{c}; 
+0043     <span class="keyword">if</span> nargout &gt; 1
+0044       <span class="comment">%checkgrad('dataprobwsig', newWvec, 0.00001, newdata, newgraph, ps)</span>
+0045       [llc dWvecc dWveccprior]=<a href="dataprobwsig.html" class="code" title="function [ll dWvec dWvecprior] = dataprobwsig(Wvec, d, graph, ps)">dataprobwsig</a>(log(newWvec),newdata, newgraph, ps);
+0046       llc = llc - wpriors;
+0047       <span class="keyword">if</span> c &gt; 1 <span class="comment">% include dWveccprior for first chunk</span>
+0048         dWvecc = dWvecc - dWveccprior;
+0049       <span class="keyword">end</span>
+0050       <span class="keyword">if</span> ~ps.fixedexternal
+0051         dWvecc(2:length(sind)+1) = dWvecc(sind+1);
+0052       <span class="keyword">end</span>
+0053       dWvec = dWvec + dWvecc; 
+0054     <span class="keyword">else</span>
+0055       llc=<a href="dataprobwsig.html" class="code" title="function [ll dWvec dWvecprior] = dataprobwsig(Wvec, d, graph, ps)">dataprobwsig</a>(log(newWvec), newdata, newgraph, ps)-wpriors;
+0056     <span class="keyword">end</span>
+0057     ll = ll + llc;
+0058   <span class="keyword">end</span>
+0059   <span class="keyword">return</span>
+0060 <span class="keyword">end</span>
+0061 
+0062 origgraph = graph;
+0063 
+0064 <span class="keyword">if</span> strcmp(ps.runps.type, <span class="string">'sim'</span>) 
+0065   dim =  ps.runps.dim;
+0066   SS = d;
+0067 <span class="keyword">elseif</span> size(d,1) == ps.runps.chunkcount  
+0068   dim = size(d,2);
+0069   SS = ps.runps.SS;
+0070 <span class="keyword">else</span>
+0071   dim = size(d,2);
+0072   SS = 1/dim*d*d';
+0073 <span class="keyword">end</span>
+0074 
+0075 nobs = size(d,1); nmiss = graph.objcount - nobs; nobj = graph.objcount;
+0076 nlat = size(graph.adj,1)-graph.objcount;
+0077 
+0078 sigma = Wvec(1);
+0079 
+0080 [graph ps] = <a href="combineWs.html" class="code" title="function [graph ps] = combineWs(graph, Wvec, ps)">combineWs</a>(graph, Wvec(2:end), ps);
+0081 
+0082 J  = <a href="inv_covariance.html" class="code" title="function [J L] = inv_covariance(W, nobj, sigma, ps);">inv_covariance</a>(graph.Wsym, nobj, sigma, ps);
+0083 G  = <a href="inv_posdef.html" class="code" title="function x = inv_posdef(A)">inv_posdef</a>(J);
+0084 ll = <a href="gplike.html" class="code" title="function ll = gplike(X, G, dim, ps)">gplike</a>(d, G, dim, ps)+ <a href="weightprior.html" class="code" title="function lp = weightprior(w, beta);">weightprior</a>(Wvec(2:end), wbeta)+ <span class="keyword">...</span>
+0085      <a href="weightprior.html" class="code" title="function lp = weightprior(w, beta);">weightprior</a>(sigma, sigbeta);
+0086 
+0087 <span class="comment">% since the function is - log posterior prob</span>
+0088 ll = -ll; 
+0089 
+0090 <span class="keyword">if</span> 0
+0091 disp(sprintf(<span class="string">'likelihood: %g prior %g'</span>, <a href="gplike.html" class="code" title="function ll = gplike(X, G, dim, ps)">gplike</a>(d,G, dim, ps), <span class="keyword">...</span>
+0092                     <a href="weightprior.html" class="code" title="function lp = weightprior(w, beta);">weightprior</a>(Wvec, wbeta)));
+0093 <span class="keyword">end</span>
+0094 
+0095 <span class="keyword">if</span> nargout &gt; 1 
+0096   <span class="keyword">if</span> nmiss == 0
+0097     <span class="comment">% partition graph because values observed only at objects</span>
+0098     [A B C D] = <a href="matrixpartition.html" class="code" title="function [A B C D]=matrixpartition(J, nobjects)">matrixpartition</a>(J, nobj);
+0099     [wA wB wC wD] = <a href="matrixpartition.html" class="code" title="function [A B C D]=matrixpartition(J, nobjects)">matrixpartition</a>(graph.Wsym, nobj);
+0100     wAnoz = wA; wAnoz(wAnoz==0)=1; wBnoz = wB; 
+0101     wBnoz(wBnoz==0)=1; 
+0102     wDnoz = wD; wDnoz(wDnoz==0)=1;
+0103 
+0104     <span class="comment">% to deal with mysterious Matlab bug</span>
+0105     Btr = B'; wBnoztr = wBnoz'; wDnoztr = wDnoz';
+0106     
+0107     Dinv = <a href="inv_posdef.html" class="code" title="function x = inv_posdef(A)">inv_posdef</a>(D);
+0108     DinvB = Dinv*Btr; DinvBtr = DinvB';
+0109     Xinv = (A-DinvBtr*Btr);
+0110     X = <a href="inv_posdef.html" class="code" title="function x = inv_posdef(A)">inv_posdef</a>(Xinv);
+0111     XXX = X*Xinv*X;
+0112     YY = SS;
+0113     U = dim*(YY-XXX);
+0114 
+0115     oneobjtr = ones(1,nobj); onelat = ones(nlat,1);
+0116     <span class="comment">% coefficients for A, B, D</span>
+0117     c1 = U;
+0118     c2 = -2*DinvB*U;
+0119     c3 = DinvB*U*DinvBtr;
+0120     diagc1tr = diag(c1)';
+0121 
+0122     <span class="comment">% -0.5 out the front is constant from log likelihood</span>
+0123     dEdlWb =  ( -0.5*(onelat*diagc1tr - c2 + diag(c3)*oneobjtr).*wBnoztr)' ;
+0124     dEdlWbprior = transpose(<span class="keyword">...</span><span class="comment"> </span>
+0125     (-pk./wBnoztr + 1./(wbeta*wBnoztr.^2) + 1./wBnoztr).*wBnoztr ); 
+0126 
+0127     dEdlWddata =  -0.5*( (onelat*diag(c3)' - c3).*wDnoztr)' ;
+0128     
+0129     <span class="comment">% keep these separate because several of the edges in D are really the same,</span>
+0130     <span class="comment">% and we only want to put the prior on one of them.</span>
+0131     
+0132     dEdlWdprior= transpose( <span class="keyword">...</span>
+0133     (-pk./wDnoztr + 1./(wbeta*wDnoztr.^2) + 1./wDnoztr).*wDnoztr );
+0134     
+0135     dEdWa = zeros(nobj);
+0136     <span class="comment">% go through Wa, Wb, Wd and pull out component weights</span>
+0137     [dWvec, dWvecprior] = <a href="extract_weights.html" class="code" title="function [dWvec dWvecprior]= extract_weights(dEdlWa, dEdlWb, dEdlWbprior,dEdlWddata, dEdlWdprior, graph, ps)">extract_weights</a>(dEdWa, dEdlWb, dEdlWbprior, <span class="keyword">...</span>
+0138                 dEdlWddata, dEdlWdprior, graph, ps);
+0139     
+0140     <span class="comment">% 1 not 2 because of the constant out the front!</span>
+0141     
+0142     <span class="keyword">if</span> ps.zglreg
+0143       dEdsig = 1/sigma^3*(trace(c1)+trace(c3)) * sigma;
+0144     <span class="keyword">else</span>    <span class="comment">% As of August 19: see below</span>
+0145      dEdsig = 1/sigma^3*(trace(c1)) * sigma;
+0146     <span class="keyword">end</span>
+0147 
+0148     <span class="comment">% with exponential prior on 1/sigma</span>
+0149     dEdsigprior = (- pk/sigma + 1/(sigbeta*sigma^2) + 1/sigma)*sigma ;
+0150     dWvec = [dEdsig+dEdsigprior; dWvec];
+0151     dWvecprior = [dEdsigprior; dWvecprior];
+0152     
+0153     <span class="comment">% since the function is - log posterior prob</span>
+0154     dWvec = -dWvec; dWvecprior = -dWvecprior;
+0155   <span class="keyword">else</span> <span class="comment">% compute partial derivatives</span>
+0156     <span class="comment">% partition graph because values observed only at objects</span>
+0157     [A1 A2 B1 B2 D] = <a href="triplepartition.html" class="code" title="function [A1 A2 B1 B2 D]=triplepartition(J, nobs, nmiss)">triplepartition</a>(J, nobs, nmiss);
+0158     [wA1 wA2 wB1 wB2 wD] = <a href="triplepartition.html" class="code" title="function [A1 A2 B1 B2 D]=triplepartition(J, nobs, nmiss)">triplepartition</a>(graph.Wsym, nobs, nmiss);
+0159 
+0160     wB1noz = wB1; wB1noz(wB1noz==0)=1;
+0161     wB2noz = wB2; wB2noz(wB2noz==0)=1;
+0162     wDnoz = wD; wDnoz(wDnoz==0)=1;
+0163 
+0164     <span class="comment">% XXX can compute matrix inverses more efficiently (matrices diagonal)</span>
+0165     A1inv = <a href="inv_posdef.html" class="code" title="function x = inv_posdef(A)">inv_posdef</a>(A1); A2inv = <a href="inv_posdef.html" class="code" title="function x = inv_posdef(A)">inv_posdef</a>(A2);
+0166     A1invB1 = A1inv*B1; A2invB2 = A2inv*B2;
+0167 
+0168     <span class="comment">% squash mysterious bug</span>
+0169     B2tr = B2'; B1tr = B1'; A1invB1tr = A1invB1'; A2invB2tr = A2invB2';
+0170     wB1noztr = wB1noz'; wB2noztr = wB2noz'; wDnoztr = wDnoz';
+0171 
+0172     Y = D - B2tr*A2inv*B2 - B1tr*A1inv*B1;
+0173     Yinv = <a href="inv_posdef.html" class="code" title="function x = inv_posdef(A)">inv_posdef</a>(Y);
+0174     YinvB1 = Yinv*B1tr; YinvB1tr = YinvB1';
+0175     X = A1inv+A1invB1*Yinv*A1invB1tr;
+0176     Xinv = <a href="inv_posdef.html" class="code" title="function x = inv_posdef(A)">inv_posdef</a>(X);
+0177     XXX = X*Xinv*X;
+0178     YY = SS;                    <span class="comment">% NB: YY and Y are unrelated</span>
+0179     U = dim*(YY-XXX);
+0180     U = dim*(Xinv - Xinv*YY*Xinv);
+0181     A1invUA1inv = A1inv*U*A1inv; 
+0182     K = YinvB1*A1invUA1inv*YinvB1tr;
+0183 
+0184     oneobstr = ones(1,nobs); onemisstr= ones(1,nmiss); onelat = ones(nlat,1); 
+0185 
+0186     <span class="comment">% coefficients for A1, A2, B1, B2, D</span>
+0187     c1 = -A1invUA1inv - 2*A1invUA1inv*YinvB1tr*A1invB1tr - A1invB1*K*A1invB1tr;
+0188     c2 = -A2invB2*K*A2invB2tr;
+0189     c3 = 2*YinvB1*A1invUA1inv + 2*K*A1invB1tr;
+0190     c4 = 2*K*A2invB2tr;
+0191     c5 = -K;
+0192 
+0193     diagc1tr = diag(c1)'; diagc2tr = diag(c2)'; diagc5tr = diag(c5)';
+0194 
+0195     <span class="comment">% -0.5 out the front is constant from log likelihood</span>
+0196     dEdlWB1 = ( -0.5 * ( onelat*diagc1tr - c3 + diag(c5)*oneobstr).*wB1noztr)';
+0197     dEdlWB1prior = transpose(<span class="keyword">...</span>
+0198     (-pk./wB1noztr + 1./(wbeta*wB1noztr.^2) + 1./wB1noztr).*wB1noztr) ;
+0199 
+0200     dEdlWB2 = ( -0.5 * ( onelat*diagc2tr - c4 + diag(c5)*onemisstr).*wB2noztr)'; 
+0201     dEdlWB2prior = transpose(<span class="keyword">...</span>
+0202     (-pk./wB2noztr + 1./(wbeta*wB2noztr.^2) +1./wB2noztr).*wB2noztr ) ;
+0203 
+0204     dEdlWDdata =  -0.5*( (onelat*diagc5tr -c5).*wDnoztr )';
+0205     
+0206     <span class="comment">% keep these separate because several of the edges in D are really the same,</span>
+0207     <span class="comment">% and we only want to put the prior on one of them (this applies to cross</span>
+0208     <span class="comment">% products)</span>
+0209     dEdlWDprior= transpose(<span class="keyword">...</span>
+0210         (-pk./wDnoztr + 1./(wbeta*wDnoztr.^2) + 1./wDnoztr).*wDnoztr );
+0211     
+0212     <span class="comment">% go through Wa, WB1, WB2, WDand pull out component weights</span>
+0213     dEdWa = zeros(nobj);
+0214     [dWvec dWvecprior] = <a href="extract_weights.html" class="code" title="function [dWvec dWvecprior]= extract_weights(dEdlWa, dEdlWb, dEdlWbprior,dEdlWddata, dEdlWdprior, graph, ps)">extract_weights</a>(dEdWa, [dEdlWB1; dEdlWB2], <span class="keyword">...</span>
+0215                    [dEdlWB1prior; dEdlWB2prior], <span class="keyword">...</span>
+0216                    dEdlWDdata, dEdlWDprior, graph, ps);
+0217     
+0218     <span class="comment">% with exponential prior on 1/sigma</span>
+0219                         <span class="comment">% because we're working with log</span>
+0220                         <span class="comment">% sigma</span>
+0221 
+0222     <span class="keyword">if</span> ps.zglreg
+0223       dEdsig = 1/sigma^3*(trace(c1)+trace(c2)+trace(c5))*sigma; 
+0224     <span class="keyword">else</span> <span class="comment">% XXX: as of August 19 2005</span>
+0225       dEdsig = 1/sigma^3*(trace(c1)+trace(c2))*sigma; 
+0226     <span class="keyword">end</span>
+0227 
+0228                                   <span class="comment">% likewise</span>
+0229     dEdsigprior = (- pk/sigma + 1/(sigbeta*sigma^2) + 1/sigma)*sigma;
+0230 
+0231     dWvec = [dEdsig+dEdsigprior; dWvec];
+0232     dWvecprior = [dEdsigprior; dWvecprior];
+0233     
+0234     <span class="comment">% since the function is - log posterior prob</span>
+0235     dWvec = -dWvec; dWvecprior = -dWvecprior;
+0236   <span class="keyword">end</span>
+0237   <span class="keyword">if</span> sum(isnan(dWvec))
+0238     disp(<span class="string">'NaNs in dataprobwsig.m'</span>);
+0239     keyboard
+0240   <span class="keyword">end</span>
+0241 <span class="keyword">end</span>
+0242 
+0243</pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

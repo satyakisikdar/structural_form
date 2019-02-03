@@ -1,0 +1,211 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of best_split</title>
+  <meta name="keywords" content="best_split">
+  <meta name="description" content="Choose the best split of cluster node C.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>best_split
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Choose the best split of cluster node C.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [ll, part1, part2, newgraph]=best_split(graph, compind, c, pind, data, seedpairs, ps) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Choose the best split of cluster node C.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="add_element.html" class="code" title="function g = add_element(g, compind, c, element, ps);">add_element</a>	add entity ELEMENT to cluster C1 of component COMPIND</li><li><a href="draw_dot.html" class="code" title="function [xret, yret, labels] = draw_dot(adj, labels, varargin);">draw_dot</a>	</li><li><a href="empty_graph.html" class="code" title="function graph = empty_graph(graph, compind, c1, c2);">empty_graph</a>	Remove all members of cluster C1 or cluster C2 from component COMPIND of</li><li><a href="graph_like.html" class="code" title="function [logI graph] = graph_like(data, graph, ps)">graph_like</a>	graph_like(data, adj, beta, sigma): compute log p(DATA|GRAPH)</li><li><a href="graph_prior.html" class="code" title="function gp = graph_prior(graph, ps)">graph_prior</a>	Compute prior on graph GRAPH.</li><li><a href="simplify_graph.html" class="code" title="function graph = simplify_graph(graph, ps)">simplify_graph</a>	Try cleaning up GRAPH by removing unnecessary cluster nodes.</li><li><a href="split_node.html" class="code" title="function [graph c1 c2] = split_node(graph, compind, c, pind, part1, part2, ps)">split_node</a>	split node C in component CIND using production PIND and put PART1 and PART2</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="choose_node_split.html" class="code" title="function [ll, part1, part2, newgraph]=choose_node_split(graph, compind,splitind, pind, data, ps)">choose_node_split</a>	split node SPLITIND in component COMPIND using production PIND</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [ll, part1, part2, newgraph]=</a><span class="keyword">...</span>
+0002             best_split(graph, compind, c, pind, data, seedpairs, ps)
+0003 
+0004 <span class="comment">% Choose the best split of cluster node C.</span>
+0005 
+0006 <span class="comment">% SEEDPAIRS: objects to seed the new children nodes</span>
+0007 <span class="comment">% COMPIND:   graph component (-1 for high level split)</span>
+0008 <span class="comment">% PIND :     which grammar to use</span>
+0009 
+0010 <span class="keyword">if</span> ps.speed &gt; 1 ps.fast = 1; <span class="keyword">end</span>
+0011 
+0012 <span class="keyword">if</span> compind &lt; 0
+0013   partmembers = find(graph.z == c);
+0014   c1 = c; c2 = pind;
+0015   e_graph = graph;
+0016 <span class="keyword">else</span>
+0017   cgraph    = graph.components{compind};
+0018   partmembers    = find(cgraph.z==c); 
+0019   [e_graph c1 c2] = <a href="split_node.html" class="code" title="function [graph c1 c2] = split_node(graph, compind, c, pind, part1, part2, ps)">split_node</a>(graph, compind, c, pind, <span class="keyword">...</span>
+0020                  partmembers(1), partmembers(2:end), ps);
+0021 <span class="keyword">end</span>
+0022 
+0023 <span class="keyword">if</span> c1 == -inf <span class="comment">% if we can't apply the current production</span>
+0024   ll = -inf; part1 = []; part2 = []; newgraph = []; <span class="keyword">return</span>;
+0025 <span class="keyword">end</span>
+0026 e_graph = <a href="empty_graph.html" class="code" title="function graph = empty_graph(graph, compind, c1, c2);">empty_graph</a>(e_graph, compind, c1, c2);
+0027 
+0028 <span class="keyword">for</span> i=1:size(seedpairs, 1)
+0029   disp(i)
+0030   g = e_graph;
+0031   g = <a href="add_element.html" class="code" title="function g = add_element(g, compind, c, element, ps);">add_element</a>(g, compind, c1, seedpairs(i,1), ps);
+0032   g = <a href="add_element.html" class="code" title="function g = add_element(g, compind, c, element, ps);">add_element</a>(g, compind, c2, seedpairs(i,2), ps);
+0033 
+0034   membout = setdiff(partmembers, seedpairs(i,:));
+0035   rp = randperm(length(membout));
+0036   membout = membout(rp);
+0037 
+0038   d = data; 
+0039   <span class="keyword">if</span> strcmp(ps.runps.type, <span class="string">'rel'</span>)
+0040   <span class="keyword">else</span>
+0041     d(membout, :)= inf;
+0042   <span class="keyword">end</span>
+0043 
+0044   [l g] = <a href="graph_like.html" class="code" title="function [logI graph] = graph_like(data, graph, ps)">graph_like</a>(d, g, ps);
+0045   l = l + <a href="graph_prior.html" class="code" title="function gp = graph_prior(graph, ps)">graph_prior</a>(g, ps);
+0046 
+0047   <span class="comment">% go through the remaining cluster members, greedily choosing which child</span>
+0048   <span class="comment">% node to put them in</span>
+0049 
+0050   <span class="keyword">while</span> ~isempty(membout) 
+0051     newobj = membout(1); membout = membout(2:end);
+0052     g1 = g; 
+0053     g1 = <a href="add_element.html" class="code" title="function g = add_element(g, compind, c, element, ps);">add_element</a>(g, compind, c1, newobj, ps);
+0054     g2 = <a href="add_element.html" class="code" title="function g = add_element(g, compind, c, element, ps);">add_element</a>(g, compind, c2, newobj, ps);
+0055    
+0056     d = data; 
+0057     <span class="keyword">if</span> strcmp(ps.runps.type, <span class="string">'rel'</span>)
+0058       d.ys(:, membout)=inf; d.ys(membout, :)=inf;
+0059       d.ns(:, membout)=inf; d.ns(membout, :)=inf;
+0060     <span class="keyword">else</span>
+0061       d(membout, :)= inf;
+0062     <span class="keyword">end</span>
+0063 
+0064     [g1l g1new] = <a href="graph_like.html" class="code" title="function [logI graph] = graph_like(data, graph, ps)">graph_like</a>(d, g1, ps);
+0065     g1l = g1l + <a href="graph_prior.html" class="code" title="function gp = graph_prior(graph, ps)">graph_prior</a>(g1, ps);
+0066 
+0067     [g2l g2new] = <a href="graph_like.html" class="code" title="function [logI graph] = graph_like(data, graph, ps)">graph_like</a>(d, g2, ps);
+0068     g2l = g2l + <a href="graph_prior.html" class="code" title="function gp = graph_prior(graph, ps)">graph_prior</a>(g2, ps);
+0069 
+0070     [l choice] = max([g1l, g2l]);
+0071     <span class="keyword">if</span> (choice == 1) 
+0072       g = g1new; 
+0073     <span class="keyword">else</span>
+0074       g = g2new; 
+0075     <span class="keyword">end</span>
+0076 
+0077 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0078 <span class="comment">% display the best split</span>
+0079 <span class="keyword">if</span> 0 
+0080   clf
+0081   ns = ps.runps.names;
+0082   ns = ns(g.z&gt;0);
+0083   <span class="comment">% replace newgraph with g</span>
+0084   <span class="keyword">for</span> i=length(ns)+1:size(g.adj,1)
+0085     ns{i}=<span class="string">''</span>;
+0086   <span class="keyword">end</span>
+0087   <a href="draw_dot.html" class="code" title="function [xret, yret, labels] = draw_dot(adj, labels, varargin);">draw_dot</a>(g.adj, ns);
+0088   keyboard
+0089 <span class="keyword">end</span>
+0090 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0091 
+0092   <span class="keyword">end</span>
+0093 
+0094 <span class="comment">%  pstmp = ps.cleanstrong; ps.cleanstrong = 1;</span>
+0095 <span class="comment">%  gsimp = simplify_graph(g, ps);</span>
+0096 <span class="comment">%  ps.cleanstrong = pstmp;</span>
+0097 <span class="comment">%  % chain splits: sometimes splitting the cluster at the end of a chain makes</span>
+0098 <span class="comment">%  % no real difference.</span>
+0099 <span class="comment">%  if length(unique(gsimp.z(partmembers))) == 1 l = -inf; end</span>
+0100   gs{i}=g;
+0101   ls(i)=l;
+0102 <span class="keyword">end</span>
+0103 
+0104 
+0105 [s sind] = sort(ls, 2, <span class="string">'descend'</span>);
+0106 pstmp = ps.cleanstrong; ps.cleanstrong = 1;
+0107 <span class="comment">% chain splits: sometimes splitting the cluster at the end of a chain makes</span>
+0108 <span class="comment">%         no real difference. Try not to choose splits like these</span>
+0109 <span class="keyword">for</span> ind = 1:length(ls)
+0110   gsimp = <a href="simplify_graph.html" class="code" title="function graph = simplify_graph(graph, ps)">simplify_graph</a>(gs{sind(ind)}, ps);
+0111   <span class="keyword">if</span> length(unique(gsimp.z(partmembers))) == 1 
+0112     ls(sind(ind)) = -inf; 
+0113   <span class="keyword">else</span>     
+0114     <span class="keyword">break</span>;
+0115   <span class="keyword">end</span>
+0116 <span class="keyword">end</span>
+0117 ps.cleanstrong = pstmp;
+0118 
+0119 <span class="keyword">switch</span> ps.speed
+0120   <span class="keyword">case</span>{<span class="string">'1,2'</span>} <span class="comment">% slower version : optimize lengths for each potential split</span>
+0121     ps.fast = 0;
+0122     <span class="keyword">for</span> i=1:length(ls)
+0123       [gl gnew]=<a href="graph_like.html" class="code" title="function [logI graph] = graph_like(data, graph, ps)">graph_like</a>(d, gs{i}, ps);
+0124       gl = gl + <a href="graph_prior.html" class="code" title="function gp = graph_prior(graph, ps)">graph_prior</a>(gnew, ps);
+0125       ls(i)=gl;
+0126       gs{i}=gnew;
+0127     <span class="keyword">end</span>
+0128     [ll mind]=max(ls);
+0129     newgraph = gs{mind};
+0130   <span class="keyword">case</span>{3} <span class="comment">% optimize once per split</span>
+0131     ps.fast = 0;
+0132     [ll mind]=max(ls);
+0133     [gl gnew]=<a href="graph_like.html" class="code" title="function [logI graph] = graph_like(data, graph, ps)">graph_like</a>(d, gs{mind}, ps);
+0134     ll = gl + <a href="graph_prior.html" class="code" title="function gp = graph_prior(graph, ps)">graph_prior</a>(gnew, ps);
+0135     newgraph = gnew;
+0136   <span class="keyword">case</span>{4,5}  <span class="comment">% optimize about once per depth</span>
+0137   [ll mind]=max(ls);
+0138   newgraph = gs{mind};
+0139 <span class="keyword">end</span>
+0140 
+0141 <span class="keyword">if</span> ls(mind) == -inf ll = -inf; <span class="keyword">end</span>
+0142 <span class="keyword">if</span> compind &lt; 0
+0143   part1 = find(graph.z == c1);
+0144   part2 = find(graph.z == c2);
+0145 <span class="keyword">else</span>
+0146   part1 = find(newgraph.components{compind}.z == c1);
+0147   part2 = find(newgraph.components{compind}.z == c2);
+0148 <span class="keyword">end</span>
+0149 
+0150 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0151 <span class="comment">% display the best split</span>
+0152 <span class="keyword">if</span> ps.showbestsplit 
+0153   figure(3); clf
+0154   ns = ps.runps.names;
+0155   <span class="comment">% replace newgraph with g</span>
+0156   <span class="keyword">for</span> i=length(ns)+1:size(newgraph.adj,1)
+0157     ns{i}=<span class="string">''</span>;
+0158   <span class="keyword">end</span>
+0159   <a href="draw_dot.html" class="code" title="function [xret, yret, labels] = draw_dot(adj, labels, varargin);">draw_dot</a>(newgraph.adj, ns);
+0160   title(num2str(ll));
+0161   drawnow
+0162 <span class="keyword">end</span>
+0163 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0164 
+0165</pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

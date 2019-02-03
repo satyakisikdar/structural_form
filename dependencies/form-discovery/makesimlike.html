@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of makesimlike</title>
+  <meta name="keywords" content="makesimlike">
+  <meta name="description" content="shift and scale DATA so that the maximum value in covariance is 1, and the">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>makesimlike
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>shift and scale DATA so that the maximum value in covariance is 1, and the</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function data = makesimlike(data, ps) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> shift and scale DATA so that the maximum value in covariance is 1, and the
+ smallest value is 0 (not always possible, in which case we settle for the
+ closest value to 0 we can get).</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="scaledata.html" class="code" title="function [data  ps]= scaledata(data, ps)">scaledata</a>	scale the data according to several strategies</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function data = makesimlike(data, ps)</a>
+0002 
+0003 <span class="comment">% shift and scale DATA so that the maximum value in covariance is 1, and the</span>
+0004 <span class="comment">% smallest value is 0 (not always possible, in which case we settle for the</span>
+0005 <span class="comment">% closest value to 0 we can get).</span>
+0006 
+0007 origdata = data;
+0008 <span class="keyword">if</span> ps.missingdata
+0009   <span class="keyword">for</span> i = 1:ps.runps.chunknum
+0010     datac{i} = data(ps.runps.objind{i}, ps.runps.featind{i});
+0011   <span class="keyword">end</span> 
+0012 <span class="keyword">else</span>
+0013   datac{1} = data;
+0014 <span class="keyword">end</span>
+0015 
+0016 lb = -inf; ub = inf;
+0017 count = 0;
+0018 <span class="keyword">for</span> ch = 1:length(datac)
+0019   data = datac{ch};
+0020   nobjects = size(data,1);
+0021   fnum = size(data,2);
+0022   outerproduct = data*data';
+0023   a = fnum;
+0024   <span class="keyword">for</span> i = 1:nobjects
+0025     <span class="keyword">for</span> j = 1:nobjects
+0026       count = count+1;
+0027       c = outerproduct(i,j);   
+0028       b = -(sum(data(i,:)) +sum(data(j,:))); 
+0029       delta = sqrt(b^2 - 4*a*c);
+0030       <span class="keyword">if</span> ~isreal(delta) 
+0031         kmins(count) = -b/(2*a);
+0032         fmins(count) = (4*a*c - b^2)/(4*a);
+0033         <span class="keyword">continue</span>;  
+0034       <span class="keyword">end</span>
+0035       <span class="comment">% values  of k between newlb and newub will make cov(i,j) &lt; 0</span>
+0036       newlb  = (-b + delta)/(2*a);
+0037       newub  = (-b - delta)/(2*a);
+0038       <span class="keyword">if</span> newlb &gt; lb
+0039         lb = newlb;
+0040       <span class="keyword">end</span>
+0041       <span class="keyword">if</span> newub &lt; ub
+0042         ub = newub;
+0043       <span class="keyword">end</span>
+0044     <span class="keyword">end</span>
+0045   <span class="keyword">end</span>
+0046 <span class="keyword">end</span>
+0047 
+0048 fmins(fmins == 0) = inf;
+0049 <span class="keyword">if</span> ub == inf
+0050   <span class="comment">% can't achieve a zero -- take the smallest value we can get</span>
+0051   [m mind] = min(fmins);
+0052   ub = kmins(mind);
+0053 <span class="keyword">end</span>
+0054 
+0055 <span class="comment">% setting k = ub or lb will make some cov(i,j) value 0 and all the others</span>
+0056 <span class="comment">% positive.  we choose ub</span>
+0057 
+0058 <span class="keyword">if</span> ps.missingdata
+0059   <span class="keyword">for</span> i = 1:ps.runps.chunknum
+0060     datac{i} = datac{i} - ub;
+0061   <span class="keyword">end</span> 
+0062 <span class="keyword">else</span>
+0063   datac{1} = origdata - ub;
+0064 <span class="keyword">end</span>
+0065 
+0066 <span class="keyword">for</span> ch = 1:length(datac)
+0067   dnew1 = datac{ch};
+0068   fnum = size(dnew1, 2);
+0069   op1 = dnew1*dnew1'/fnum;
+0070   maxs(ch) = max(op1(:));
+0071   csize(ch) = size(dnew1,2);
+0072 <span class="keyword">end</span>
+0073 
+0074 <span class="comment">%set largest value anywhere to 1</span>
+0075 <span class="comment">%m = max(maxs);</span>
+0076 
+0077 <span class="comment">% set largest value in largest chunk to 1</span>
+0078 [mc mcind]=max(csize);
+0079 m = maxs(mcind);
+0080 
+0081 data = (origdata - ub)/sqrt(m);
+0082</pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

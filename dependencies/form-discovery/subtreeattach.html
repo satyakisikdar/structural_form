@@ -1,0 +1,121 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of subtreeattach</title>
+  <meta name="keywords" content="subtreeattach">
+  <meta name="description" content="attach subtree rooted at j to edge between edgep and edgec">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>subtreeattach
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>attach subtree rooted at j to edge between edgep and edgec</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function graph = subtreeattach(graph, j, edgep, edgec, comp, ps, varargin); </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> attach subtree rooted at j to edge between edgep and edgec</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="combinegraphs.html" class="code" title="function graph = combinegraphs(graph, ps, varargin)">combinegraphs</a>	create direct product of components in graph.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="spr.html" class="code" title="function [graph currscore overallchange nearmscores nearmgraphs] =spr(graph, data, ps, i, epsilon, currscore, overallchange, debug,nearmscores, nearmgraphs)">spr</a>	"Sub-tree pruning and regrafting": try changing a tree structured graph</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function graph = subtreeattach(graph, j, edgep, edgec, comp, ps, varargin);</a>
+0002 
+0003 <span class="comment">% attach subtree rooted at j to edge between edgep and edgec</span>
+0004 
+0005 origgraph = graph;
+0006 args = varargin;
+0007 objflag = 0;
+0008 <span class="keyword">for</span> i=1:2:length(args)
+0009   <span class="keyword">switch</span> args{i}
+0010    <span class="keyword">case</span> <span class="string">'objflag'</span>, objflag=args{i+1};
+0011   <span class="keyword">end</span>
+0012 <span class="keyword">end</span>
+0013 
+0014 adj = graph.components{comp}.adj; W   = graph.components{comp}.W; 
+0015 newadj = adj; newW = W;
+0016 <span class="keyword">if</span> objflag == 0
+0017   oldp = find(adj(:, j));
+0018   <span class="keyword">if</span> isempty(oldp) <span class="comment">% j is a cluster node with no parent</span>
+0019     <span class="keyword">return</span>
+0020   <span class="keyword">end</span>
+0021 <span class="keyword">end</span>
+0022 
+0023 <span class="keyword">switch</span> graph.components{comp}.type
+0024   <span class="keyword">case</span>{<span class="string">'tree'</span>}
+0025     <span class="comment">% attach subtree rooted at j to edge between edgep and edgec</span>
+0026     oldweight= W(edgep, edgec); newweight = 2*oldweight;
+0027     newp = size(adj,1)+1;
+0028     newadj(edgep, newp) = 1; newadj(newp, edgec) = 1; newadj(edgep, edgec) = 0;
+0029     newW(edgep, newp) = newweight; 
+0030     newW(newp, edgec) = newweight; 
+0031     newW(edgep, edgec) = 0;
+0032     graph.components{comp}.illegal = [graph.components{comp}.illegal, newp]; 
+0033     <span class="keyword">if</span> objflag
+0034       newpc = size(adj,1)+2;
+0035       newadj(newp, newpc) = 1; newW(newp, newpc) = 2 * graph.leaflengths(j);
+0036       newadj(newpc, :) = 0; newW(newpc, :) = 0;
+0037       graph.leaflengths(j) = 2*graph.leaflengths(j);
+0038       graph.components{comp}.z(j) = newpc;
+0039       graph.components{comp}.nodecount = graph.components{comp}.nodecount+2;
+0040     <span class="keyword">else</span> 
+0041       newadj(newp, j) = 1; newW(newp, j) = W(oldp, j);
+0042       newadj(oldp, j) = 0; newW(oldp, j) = 0; 
+0043       graph.components{comp}.nodecount = graph.components{comp}.nodecount+1;
+0044     <span class="keyword">end</span>
+0045 
+0046   <span class="keyword">case</span>{<span class="string">'hierarchy'</span>, <span class="string">'dirhierarchy'</span>, <span class="string">'domtree'</span>, <span class="string">'dirhierarchynoself'</span>, <span class="keyword">...</span>
+0047        <span class="string">'domtreenoself'</span>, <span class="string">'undirhierarchy'</span>, <span class="string">'undirhierarchynoself'</span>,<span class="keyword">...</span>
+0048        <span class="string">'undirdomtree'</span>, <span class="string">'undirdomtreenoself'</span>}
+0049     <span class="keyword">if</span> objflag <span class="comment">% attach object j to edgep</span>
+0050       newp = size(adj,1)+1;
+0051       newadj(edgep, newp) = 1;  newadj(newp,:) = 0;
+0052       newW(edgep, newp) = 2*graph.leaflengths(j); newW(newp,:) = 0;
+0053       graph.leaflengths(j) = 2*graph.leaflengths(j);
+0054       graph.components{comp}.z(j) = newp;
+0055       graph.components{comp}.nodecount = graph.components{comp}.nodecount+1;
+0056     <span class="keyword">else</span> <span class="comment">% attach subtree rooted at j to edgep</span>
+0057       newadj(oldp, j) = 0; newW(oldp, j) = 0;
+0058       newadj(edgep, j) = 1; newW(edgep, j) = W(oldp, j);
+0059     <span class="keyword">end</span>
+0060   <span class="keyword">otherwise</span>
+0061     error(<span class="string">'unexpected structure'</span>);
+0062 <span class="keyword">end</span>
+0063 
+0064 graph.components{comp}.adj = newadj;
+0065 graph.components{comp}.W = newW;
+0066 graph.components{comp}.adjsym = newadj + newadj' - (newadj &amp; newadj');
+0067 graph.components{comp}.Wsym = newW + newW' - newW.*(newadj &amp; newadj');
+0068 
+0069 <span class="comment">% make sure new node doesn't map to a a neighbor of edgep or edgec. If this is</span>
+0070 <span class="comment">% true it can map to anything.</span>
+0071 empties  = [find(~adj(edgep,:) &amp; ~adj(edgec,:)), 1, 1, 1];
+0072 imap = [1:size(adj,1), empties(1:(size(newadj,1)-size(adj,1)))];
+0073 
+0074 graph = <a href="combinegraphs.html" class="code" title="function graph = combinegraphs(graph, ps, varargin)">combinegraphs</a>(graph, ps, <span class="string">'origgraph'</span>, origgraph, <span class="string">'compind'</span>, comp, <span class="keyword">...</span>
+0075               <span class="string">'imap'</span>, imap);</pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

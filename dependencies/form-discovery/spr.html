@@ -1,0 +1,155 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of spr</title>
+  <meta name="keywords" content="spr">
+  <meta name="description" content="&quot;Sub-tree pruning and regrafting&quot;: try changing a tree structured graph">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>spr
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>&quot;Sub-tree pruning and regrafting&quot;: try changing a tree structured graph</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [graph currscore overallchange nearmscores nearmgraphs] =spr(graph, data, ps, i, epsilon, currscore, overallchange, debug,nearmscores, nearmgraphs) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> &quot;Sub-tree pruning and regrafting&quot;: try changing a tree structured graph
+ by snipping off pieces and attaching them elsewhere</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="addnearmiss.html" class="code" title="function [nearmscores nearmgraphs] = addnearmiss(nearmscores, nearmgraphs,graph, score, currgraph, currscore, epsilon)">addnearmiss</a>	Add GRAPH to NEARMGRAPHS -- the list of "near miss graphs"</li><li><a href="find_descendants.html" class="code" title="function descendants = find_descendants(adj)">find_descendants</a>	Create cell array specifying descendants of each node in ADJ</li><li><a href="graph_like.html" class="code" title="function [logI graph] = graph_like(data, graph, ps)">graph_like</a>	graph_like(data, adj, beta, sigma): compute log p(DATA|GRAPH)</li><li><a href="graph_prior.html" class="code" title="function gp = graph_prior(graph, ps)">graph_prior</a>	Compute prior on graph GRAPH.</li><li><a href="simplify_graph.html" class="code" title="function graph = simplify_graph(graph, ps)">simplify_graph</a>	Try cleaning up GRAPH by removing unnecessary cluster nodes.</li><li><a href="subtreeattach.html" class="code" title="function graph = subtreeattach(graph, j, edgep, edgec, comp, ps, varargin);">subtreeattach</a>	attach subtree rooted at j to edge between edgep and edgec</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="gibbs_clean.html" class="code" title="function [ll graph] = gibbs_clean(graph, data, ps, varargin)">gibbs_clean</a>	SWAPTYPES: which swaps to include</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function rp = makerp(graph, i, objflag)</a></li><li><a href="#_sub2" class="code">function [rs cs] = makers(graph, j, i, objflag)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [graph currscore overallchange nearmscores nearmgraphs] = </a><span class="keyword">...</span>
+0002        spr(graph, data, ps, i, epsilon, currscore, overallchange, debug,<span class="keyword">...</span>
+0003         nearmscores, nearmgraphs)
+0004 
+0005 <span class="comment">% &quot;Sub-tree pruning and regrafting&quot;: try changing a tree structured graph</span>
+0006 <span class="comment">% by snipping off pieces and attaching them elsewhere</span>
+0007 
+0008 <span class="comment">% I: component of graph to tweak</span>
+0009 
+0010 nmissflag = length(nearmscores) &gt; 0;
+0011 
+0012 <span class="keyword">if</span> strcmp(graph.components{i}.type, <span class="string">'tree'</span>) 
+0013   oflags = 0:1;
+0014 <span class="keyword">else</span> 
+0015   oflags = 0; <span class="comment">% if tree is not latent, snipping off an object will be the same</span>
+0016           <span class="comment">% as moving it from cluster to cluster -- and we've done that</span>
+0017 <span class="keyword">end</span>
+0018 
+0019 <span class="keyword">for</span> objflag = oflags        <span class="comment">% snip off an object or a cluster node?</span>
+0020   rp = <a href="#_sub1" class="code" title="subfunction rp = makerp(graph, i, objflag)">makerp</a>(graph, i, objflag);
+0021   <span class="keyword">for</span> jind=1:length(rp)
+0022     <span class="keyword">if</span> jind &gt; length(rp) <span class="keyword">continue</span>; <span class="keyword">end</span>
+0023     j = rp(jind);
+0024     [rs cs] = <a href="#_sub2" class="code" title="subfunction [rs cs] = makers(graph, j, i, objflag)">makers</a>(graph, j, i, objflag);
+0025     <span class="keyword">if</span> ~isempty(rs)
+0026       <span class="keyword">for</span> eind = 1:length(rs)
+0027         <span class="keyword">if</span> eind &gt; length(rs) <span class="keyword">continue</span>; <span class="keyword">end</span>
+0028         testgraph = <a href="subtreeattach.html" class="code" title="function graph = subtreeattach(graph, j, edgep, edgec, comp, ps, varargin);">subtreeattach</a>(graph, j, rs(eind),cs(eind), i, ps, <span class="keyword">...</span>
+0029                   <span class="string">'objflag'</span>, objflag); 
+0030         testgraph = <a href="simplify_graph.html" class="code" title="function graph = simplify_graph(graph, ps)">simplify_graph</a>(testgraph, ps);
+0031         [testscore, newgraph]=<a href="graph_like.html" class="code" title="function [logI graph] = graph_like(data, graph, ps)">graph_like</a>(data, testgraph, ps);
+0032         testscore = testscore + <a href="graph_prior.html" class="code" title="function gp = graph_prior(graph, ps)">graph_prior</a>(testgraph, ps);
+0033         <span class="keyword">if</span> testscore -  currscore  &gt; epsilon
+0034           <span class="keyword">if</span> debug keyboard; <span class="keyword">end</span>
+0035           overallchange = 1;
+0036           graph = testgraph;
+0037           currscore = testscore;
+0038       rp = <a href="#_sub1" class="code" title="subfunction rp = makerp(graph, i, objflag)">makerp</a>(graph, i, objflag);
+0039       <span class="keyword">if</span> jind &gt; length(rp) <span class="keyword">break</span>; <span class="keyword">end</span> 
+0040       j = rp(jind);
+0041         [rs cs] = <a href="#_sub2" class="code" title="subfunction [rs cs] = makers(graph, j, i, objflag)">makers</a>(graph, j, i, objflag);
+0042         <span class="keyword">elseif</span> nmissflag <span class="comment">% add graph to list of nearmisses</span>
+0043           <span class="keyword">if</span> testscore &gt; nearmscores(end)
+0044         [nearmscores nearmgraphs]=<a href="addnearmiss.html" class="code" title="function [nearmscores nearmgraphs] = addnearmiss(nearmscores, nearmgraphs,graph, score, currgraph, currscore, epsilon)">addnearmiss</a>(nearmscores, nearmgraphs,<span class="keyword">...</span>
+0045           testgraph, testscore, graph, currscore, epsilon);
+0046       <span class="keyword">end</span>
+0047     <span class="keyword">end</span>
+0048       <span class="keyword">end</span>
+0049     <span class="keyword">end</span>
+0050   <span class="keyword">end</span>
+0051 <span class="keyword">end</span>
+0052 
+0053 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0054 <a name="_sub1" href="#_subfunctions" class="code">function rp = makerp(graph, i, objflag)</a>
+0055 
+0056 <span class="keyword">if</span> objflag == 0
+0057   rp = randperm(graph.components{i}.nodecount);
+0058 <span class="keyword">else</span>
+0059   rp = randperm(graph.objcount);
+0060 <span class="keyword">end</span>
+0061 
+0062 
+0063 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0064 <a name="_sub2" href="#_subfunctions" class="code">function [rs cs] = makers(graph, j, i, objflag)</a>
+0065 
+0066 <span class="comment">% J is node; I is graph component</span>
+0067 <span class="comment">% 'tree'    : Rs and Cs indicate edges we'll attach j to</span>
+0068 <span class="comment">% 'hierarchy' : Rs (== Cs) is list of nodes we'll attach j to</span>
+0069 
+0070 <span class="keyword">if</span> objflag
+0071   <span class="keyword">switch</span> graph.components{i}.type
+0072     <span class="keyword">case</span>{<span class="string">'tree'</span>} 
+0073       edges = graph.components{i}.adj; 
+0074       [rs cs] = find(edges);
+0075     <span class="keyword">case</span>{<span class="string">'hierarchy'</span>, <span class="string">'dirhierarchy'</span>, <span class="string">'domtree'</span>, <span class="string">'dirhierarchynoself'</span>,<span class="keyword">...</span>
+0076           <span class="string">'undirhierarchy'</span>, <span class="string">'undirhierarchynoself'</span>}
+0077       rs = 1:graph.components{i}.nodecount;
+0078       rs = setdiff(rs,graph.components{i}.z(j));   
+0079       cs = rs;
+0080   <span class="keyword">end</span>
+0081 <span class="keyword">else</span>   <span class="comment">% j is cluster node</span>
+0082   jparent = find(graph.components{i}.adj(:,j));
+0083   <span class="keyword">if</span> isempty(jparent)
+0084     rs = []; cs = []; <span class="keyword">return</span>;
+0085   <span class="keyword">end</span>
+0086   descendants = <a href="find_descendants.html" class="code" title="function descendants = find_descendants(adj)">find_descendants</a>(graph.components{i}.adj);
+0087   dj = descendants{j};
+0088   <span class="keyword">if</span> size(dj, 1) &gt; size(dj,2)
+0089     dj = dj';
+0090   <span class="keyword">end</span>
+0091   <span class="comment">% previous 4 lines are workaround because next line breaks recent</span>
+0092   <span class="comment">% versions of Matlab</span>
+0093   jds = [j, dj];
+0094   <span class="keyword">switch</span> graph.components{i}.type
+0095       <span class="keyword">case</span>{<span class="string">'tree'</span>} 
+0096         edges = graph.components{i}.adj; edges(jds, jds)=0;
+0097         [rs cs] = find(edges);
+0098         <span class="comment">% if j's parent is one of the edge nodes the swap changes nothing</span>
+0099         includeind = find(sum([rs,cs] == jparent, 2) == 0);
+0100         rs = rs(includeind); cs = cs(includeind);
+0101       <span class="keyword">case</span>{<span class="string">'hierarchy'</span>, <span class="string">'dirhierarchy'</span>, <span class="string">'domtree'</span>, <span class="string">'dirhierarchynoself'</span>,<span class="keyword">...</span>
+0102        <span class="string">'undirhierarchy'</span>, <span class="string">'undirhierarchynoself'</span>}
+0103         rs = 1:graph.components{i}.nodecount;
+0104         rs = setdiff(rs, [jds, jparent]); cs = rs;
+0105   <span class="keyword">end</span>
+0106 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

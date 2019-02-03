@@ -1,0 +1,96 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of mat2vec</title>
+  <meta name="keywords" content="mat2vec">
+  <meta name="description" content="convert weighted graph W to a vector of weights V">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>mat2vec
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>convert weighted graph W to a vector of weights V</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function V = mat2vec(W, graph, ps) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> convert weighted graph W to a vector of weights V</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="matrixpartition.html" class="code" title="function [A B C D]=matrixpartition(J, nobjects)">matrixpartition</a>	Chop matrix J into 4 sub matrices</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="graph_like_conn.html" class="code" title="function [logI graph] = graph_like_conn(data, graph, ps)">graph_like_conn</a>	Compute log P(DATA|GRAPH)</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function V = mat2vec(W, graph, ps)</a>
+0002 
+0003 <span class="comment">% convert weighted graph W to a vector of weights V</span>
+0004 
+0005 <span class="keyword">if</span> ps.fixedall
+0006   V = log(graph.extlen);
+0007   <span class="keyword">return</span>;
+0008 <span class="keyword">elseif</span> ps.fixedexternal &amp;&amp; ps.fixedinternal &amp;&amp; sum(sum(graph.adjcluster)) == 0
+0009   V = [log(graph.extlen)];
+0010   <span class="keyword">return</span>
+0011 <span class="keyword">elseif</span> ps.fixedexternal &amp;&amp; ps.fixedinternal 
+0012   V = log([graph.extlen; graph.intlen]);
+0013   <span class="keyword">return</span>;
+0014 <span class="keyword">end</span>
+0015 
+0016 [A B C D]     = <a href="matrixpartition.html" class="code" title="function [A B C D]=matrixpartition(J, nobjects)">matrixpartition</a>(W, graph.objcount);
+0017 [mA mB mC mD] = <a href="matrixpartition.html" class="code" title="function [A B C D]=matrixpartition(J, nobjects)">matrixpartition</a>(graph.adjsym, graph.objcount);
+0018 mA = tril(mA, -1);
+0019 
+0020 Dvec = [];
+0021 <span class="keyword">if</span> ps.prodtied
+0022   <span class="keyword">for</span> i=1:graph.ncomp
+0023     W = graph.components{i}.Wsym;
+0024     mW = logical(tril(graph.components{i}.adjsym, -1));
+0025     <span class="keyword">if</span> sum(sum(W))&gt;0
+0026       Dvec = [Dvec; W(mW)];
+0027     <span class="keyword">end</span>
+0028   <span class="keyword">end</span>
+0029 <span class="keyword">else</span>
+0030   <span class="keyword">if</span> size(mD,1) == 1
+0031     mD = [];
+0032   <span class="keyword">else</span> 
+0033     mD = logical(tril(mD, -1));
+0034   <span class="keyword">end</span>
+0035   Dvec = D(mD);
+0036 <span class="keyword">end</span>
+0037 
+0038 <span class="keyword">if</span> size(C,1) == 1
+0039   C = C';
+0040 <span class="keyword">end</span>
+0041 
+0042 <span class="keyword">if</span> ps.fixedexternal
+0043   V = [log(graph.extlen); Dvec];
+0044 <span class="keyword">elseif</span> ps.fixedinternal &amp;&amp; sum(sum(graph.adjcluster,1)) == 0
+0045   V = [C(find(mC))];
+0046 <span class="keyword">elseif</span> ps.fixedinternal 
+0047   V = [C(find(mC)); log(graph.intlen)];
+0048 <span class="keyword">else</span>
+0049   V  = [A(find(mA)); C(find(mC)); Dvec];
+0050 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

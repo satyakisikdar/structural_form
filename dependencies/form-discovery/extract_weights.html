@@ -1,0 +1,136 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of extract_weights</title>
+  <meta name="keywords" content="extract_weights">
+  <meta name="description" content="Go through gradient matrices (dEdlWa, etc) and pull out dWvec (includes">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>extract_weights
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Go through gradient matrices (dEdlWa, etc) and pull out dWvec (includes</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [dWvec dWvecprior]= extract_weights(dEdlWa, dEdlWb, dEdlWbprior,dEdlWddata, dEdlWdprior, graph, ps) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Go through gradient matrices (dEdlWa, etc) and pull out dWvec (includes
+ contributions from data and prior) and dWvecprior (contributions from prior only)</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="matrixpartition.html" class="code" title="function [A B C D]=matrixpartition(J, nobjects)">matrixpartition</a>	Chop matrix J into 4 sub matrices</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="dataprobwsig.html" class="code" title="function [ll dWvec dWvecprior] = dataprobwsig(Wvec, d, graph, ps)">dataprobwsig</a>	Compute probability P(Wvec|D), where Wvec specifies the edge lengths for</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [dWvec dWvecprior]= extract_weights(dEdlWa, dEdlWb, dEdlWbprior, </a><span class="keyword">...</span>
+0002                          dEdlWddata, dEdlWdprior, graph, ps)
+0003 
+0004 <span class="comment">% Go through gradient matrices (dEdlWa, etc) and pull out dWvec (includes</span>
+0005 <span class="comment">% contributions from data and prior) and dWvecprior (contributions from prior only)</span>
+0006 
+0007 <span class="comment">% enforce symmetry of D</span>
+0008 nclust = size(graph.adjcluster,1);
+0009 dEdlWddatasym = dEdlWddata + dEdlWddata' - eye(nclust).*dEdlWddata;
+0010 dEdlWdpriorsym = dEdlWdprior + dEdlWdprior' - eye(nclust).*dEdlWdprior;
+0011 
+0012 [mA mB mC mD] = <a href="matrixpartition.html" class="code" title="function [A B C D]=matrixpartition(J, nobjects)">matrixpartition</a>(graph.adjsym, graph.objcount);
+0013 
+0014 <span class="comment">% Bvec should be leafweights in order</span>
+0015 dEdlWc = dEdlWb';
+0016 dEdlWcprior = dEdlWbprior';
+0017 <span class="keyword">if</span> size(dEdlWc,1) == 1
+0018   dEdlWc = dEdlWc';
+0019   dEdlWcprior = dEdlWcprior';
+0020 <span class="keyword">end</span>
+0021 Bvec = dEdlWc(find(mC))+dEdlWcprior(find(mC));
+0022 Bvecprior = dEdlWcprior(find(mC));
+0023 <span class="keyword">if</span> size(mD, 1) == 1
+0024   mD = [];
+0025 <span class="keyword">else</span>
+0026   mD = logical(tril(mD, -1));
+0027 <span class="keyword">end</span>
+0028 mB = logical(mB);
+0029 
+0030              <span class="comment">% we need to consider forward and backward edges even</span>
+0031              <span class="comment">% though the matrix is symmetric</span>
+0032 extcount = sum(sum(mB)); intcount = 2*sum(sum(mD));
+0033 dext = dEdlWb(mB); dextprior = dEdlWbprior(mB); 
+0034 dint = dEdlWddatasym(mD); dintprior = dEdlWdpriorsym(mD); 
+0035 
+0036 <span class="keyword">if</span> ps.fixedall
+0037   dWvecprior = (sum(dextprior) + sum(dintprior)) / (extcount + intcount);
+0038   dWvec = dWvecprior + sum(dext) + sum(dint); 
+0039   <span class="keyword">return</span>
+0040 <span class="keyword">elseif</span> ps.fixedexternal &amp;&amp; ps.fixedinternal
+0041   <span class="keyword">if</span> intcount == 0
+0042     dWvecprior = [sum(dextprior)/extcount];
+0043     dWvec = dWvecprior + sum(dext);
+0044   <span class="keyword">else</span>
+0045     dWvecprior = [sum(dextprior)/extcount; sum(dintprior)/intcount];
+0046     dWvec = dWvecprior + [sum(dext); sum(dint)];
+0047   <span class="keyword">end</span>
+0048   <span class="keyword">return</span>
+0049 <span class="keyword">elseif</span> ps.fixedinternal
+0050   <span class="keyword">if</span> intcount == 0
+0051     dWvecprior = Bvecprior;  
+0052     dWvec = dWvecprior + dEdlWc(find(mC));   
+0053   <span class="keyword">else</span>
+0054     dWvecprior = [Bvecprior; sum(dintprior)/intcount];  
+0055     dWvec = dWvecprior + [dEdlWc(find(mC)); sum(dint)];   
+0056   <span class="keyword">end</span>
+0057   <span class="keyword">return</span>
+0058 <span class="keyword">end</span>
+0059 
+0060 Dvec = []; Dvecprior = [];
+0061 <span class="keyword">if</span> ps.prodtied
+0062   <span class="keyword">for</span> i=1:graph.ncomp
+0063     emap = graph.components{i}.edgemapsym;
+0064     edgeinds = emap(find(emap));
+0065     edgevalsdata = dEdlWddata(find(emap));
+0066     edgevalsprior= dEdlWdprior(find(emap));
+0067     [s sind]=sort(edgeinds);
+0068     counts = sparse(1, edgeinds(sind), 1);
+0069     sumvalsdata = cumsum(edgevalsdata(sind));
+0070     sumvalsprior= cumsum(edgevalsprior(sind));
+0071     sumsdata = diff([0; sumvalsdata(cumsum(counts))]);
+0072     sumsprior= diff([0; sumvalsprior(cumsum(counts))]);
+0073     sumsprior = sumsprior ./full(counts)';
+0074     Dvec = [Dvec;sumsdata+sumsprior];
+0075     Dvecprior = [Dvecprior;sumsprior];
+0076   <span class="keyword">end</span>
+0077 <span class="keyword">else</span>
+0078    Dvecprior = dintprior/2;  <span class="comment">% D is symmetric, but only want the prior on one</span>
+0079                  <span class="comment">%   edge</span>
+0080    Dvec = dint + Dvecprior;
+0081 <span class="keyword">end</span>
+0082 
+0083 <span class="keyword">if</span> ps.fixedexternal
+0084   dWvecprior = [sum(dextprior)/extcount; Dvecprior];
+0085   dWvec = [sum(dextprior)/extcount + sum(dext);  Dvec];
+0086 <span class="keyword">else</span>
+0087   dWvecprior = [Bvecprior; Dvecprior];
+0088   dWvec         = [Bvec; Dvec];
+0089 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

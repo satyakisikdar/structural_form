@@ -1,0 +1,331 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of swapobjclust</title>
+  <meta name="keywords" content="swapobjclust">
+  <meta name="description" content="Try improving GRAPH by swapping clusters or individual objects">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>swapobjclust
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Try improving GRAPH by swapping clusters or individual objects</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [graph currscore overallchange nearmscores nearmgraphs] =swapobjclust(graph, data, ps, comp, epsilon, currscore,overallchange, loopmax, nearmscores, nearmgraphs, varargin); </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Try improving GRAPH by swapping clusters or individual objects</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="addnearmiss.html" class="code" title="function [nearmscores nearmgraphs] = addnearmiss(nearmscores, nearmgraphs,graph, score, currgraph, currscore, epsilon)">addnearmiss</a>	Add GRAPH to NEARMGRAPHS -- the list of "near miss graphs"</li><li><a href="combinegraphs.html" class="code" title="function graph = combinegraphs(graph, ps, varargin)">combinegraphs</a>	create direct product of components in graph.</li><li><a href="dijkstra.html" class="code" title="function [D,P] = dijk(A,s,t)">dijkstra</a>	DIJK Shortest paths from nodes 's' to nodes 't' using Dijkstra algorithm.</li><li><a href="graph_like.html" class="code" title="function [logI graph] = graph_like(data, graph, ps)">graph_like</a>	graph_like(data, adj, beta, sigma): compute log p(DATA|GRAPH)</li><li><a href="graph_prior.html" class="code" title="function gp = graph_prior(graph, ps)">graph_prior</a>	Compute prior on graph GRAPH.</li><li><a href="simplify_graph.html" class="code" title="function graph = simplify_graph(graph, ps)">simplify_graph</a>	Try cleaning up GRAPH by removing unnecessary cluster nodes.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="gibbs_clean.html" class="code" title="function [ll graph] = gibbs_clean(graph, data, ps, varargin)">gibbs_clean</a>	SWAPTYPES: which swaps to include</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function [sw1 sw2]= chooseswaps(graph, whole, oflag, comp, fastflag, graphngb)</a></li><li><a href="#_sub2" class="code">function graph = doswap(graph, sw1, sw2, oflag, ps);</a></li><li><a href="#_sub3" class="code">function js = sourceobjs(graph)</a></li><li><a href="#_sub4" class="code">function csource = sourcecls(graph, i)</a></li><li><a href="#_sub5" class="code">function [extcls intcls]= cltypes(graph, i)</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [graph currscore overallchange nearmscores nearmgraphs] = </a><span class="keyword">...</span>
+0002         swapobjclust(graph, data, ps, comp, epsilon, currscore, <span class="keyword">...</span>
+0003          overallchange, loopmax, nearmscores, nearmgraphs, varargin); 
+0004 
+0005 <span class="comment">% Try improving GRAPH by swapping clusters or individual objects</span>
+0006 
+0007 args      = varargin;
+0008 objflag   = 0;
+0009 debug     = 0;
+0010 whole     = 0;
+0011 fastflag  = 0; <span class="comment">% only try swaps locally in graph</span>
+0012 <span class="keyword">for</span> i=1:2:length(args)
+0013   <span class="keyword">switch</span> args{i}
+0014    <span class="keyword">case</span> <span class="string">'objflag'</span>,    objflag = args{i+1};     <span class="comment">% move objects around</span>
+0015    <span class="keyword">case</span> <span class="string">'debug'</span>,      debug   = args{i+1};     
+0016    <span class="keyword">case</span> <span class="string">'fastflag'</span>,  fastflag = args{i+1};     
+0017   <span class="keyword">end</span>
+0018 <span class="keyword">end</span>
+0019 <span class="keyword">if</span> isempty(comp)
+0020   whole = 1;    <span class="comment">% swaps at level of entire graph</span>
+0021 <span class="keyword">end</span>
+0022 graphngb = 3;   <span class="comment">% neighborhood within which to try swaps (fast mode)</span>
+0023 
+0024 nmissflag = length(nearmscores) &gt; 0;
+0025 
+0026 change = 1; loopcount = 0;
+0027 <span class="keyword">while</span> (change &amp;&amp; loopcount &lt; loopmax) 
+0028   change = 0; loopcount = loopcount+1;
+0029   <span class="keyword">if</span> loopcount == loopmax 
+0030     disp(<span class="string">'loopcount exceeded in gibbs_clean: swapobjclust'</span>);
+0031   <span class="keyword">end</span>
+0032   [sw1 sw2]= <a href="#_sub1" class="code" title="subfunction [sw1 sw2]= chooseswaps(graph, whole, oflag, comp, fastflag, graphngb)">chooseswaps</a>(graph, whole, objflag, comp, fastflag, graphngb);
+0033   rp = randperm(size(sw1,1));
+0034   <span class="keyword">for</span> jind=1:length(rp)
+0035     j = rp(jind);
+0036     <span class="keyword">if</span> j &gt; size(sw1,1) <span class="keyword">continue</span>; <span class="keyword">end</span>
+0037     testgraph = <a href="#_sub2" class="code" title="subfunction graph = doswap(graph, sw1, sw2, oflag, ps);">doswap</a>(graph, sw1(j,:), sw2(j,:), objflag, ps); 
+0038     testgraph = <a href="simplify_graph.html" class="code" title="function graph = simplify_graph(graph, ps)">simplify_graph</a>(testgraph, ps);
+0039     [testscore, newgraph]=<a href="graph_like.html" class="code" title="function [logI graph] = graph_like(data, graph, ps)">graph_like</a>(data, testgraph, ps);
+0040     testscore = testscore + <a href="graph_prior.html" class="code" title="function gp = graph_prior(graph, ps)">graph_prior</a>(testgraph, ps);
+0041     <span class="comment">%if debug clf; draw_dot(testgraph.adj); keyboard; end</span>
+0042     <span class="comment">%XXX</span>
+0043     <span class="comment">%if sw1(j,1) == 1 &amp;&amp; sw1(j,2) == 21 &amp;&amp; isnan(sw2(j,1)) keyboard; end</span>
+0044     <span class="comment">%XXX</span>
+0045     <span class="keyword">if</span> testscore -  currscore  &gt; epsilon
+0046       <span class="keyword">if</span> debug keyboard; <span class="keyword">end</span>
+0047       change = 1; overallchange = 1;
+0048       graph = testgraph; currscore = testscore;
+0049       [sw1 sw2]= <a href="#_sub1" class="code" title="subfunction [sw1 sw2]= chooseswaps(graph, whole, oflag, comp, fastflag, graphngb)">chooseswaps</a>(graph, whole, objflag, comp, fastflag, graphngb);
+0050     <span class="keyword">elseif</span> nmissflag <span class="comment">% add graph to list of nearmisses</span>
+0051       <span class="keyword">if</span> testscore &gt; nearmscores(end)
+0052     [nearmscores nearmgraphs]=<a href="addnearmiss.html" class="code" title="function [nearmscores nearmgraphs] = addnearmiss(nearmscores, nearmgraphs,graph, score, currgraph, currscore, epsilon)">addnearmiss</a>(nearmscores, nearmgraphs,<span class="keyword">...</span>
+0053         testgraph, testscore, graph, currscore, epsilon);
+0054       <span class="keyword">end</span>
+0055     <span class="keyword">end</span>
+0056   <span class="keyword">end</span>
+0057 <span class="keyword">end</span>
+0058 
+0059 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0060 <span class="comment">% sw1 and sw2 indicate  swaps/moves to make</span>
+0061 <span class="comment">%    format: [c, j, z1, z2, z3, ..., zn]</span>
+0062 <span class="comment">%            Either c: graph component, j: node</span>
+0063 <span class="comment">%                or c: nan, j: node (at top level)</span>
+0064 <span class="comment">%                or c: nan, j:object</span>
+0065 <span class="comment">%    sw2   : may contain nans (for rows that are moves)</span>
+0066 <span class="comment">%</span>
+0067 
+0068 <a name="_sub1" href="#_subfunctions" class="code">function [sw1 sw2]= chooseswaps(graph, whole, oflag, comp, fastflag, graphngb)</a>
+0069 
+0070 <span class="keyword">if</span> oflag
+0071   nnode = size(graph.adjcluster, 1);
+0072   <span class="comment">% cluster nodes that are free to accept objects</span>
+0073   clegal = setdiff(1:nnode, graph.illegal); 
+0074   clegalv = zeros(1,nnode); clegalv(clegal) = 1;
+0075   <span class="comment">% objects that are free to move</span>
+0076   objmovable = <a href="#_sub3" class="code" title="subfunction js = sourceobjs(graph)">sourceobjs</a>(graph);
+0077   objmovablev= zeros(1,graph.objcount); objmovablev(objmovable) = 1;
+0078   <span class="keyword">if</span> fastflag
+0079     dijk = <a href="dijkstra.html" class="code" title="function [D,P] = dijk(A,s,t)">dijkstra</a>(graph.adjclustersym);
+0080     col1 = []; col2 = [];
+0081     <span class="keyword">for</span> c=unique(graph.z)
+0082       ds = find(dijk(c,:) &lt;= graphngb &amp; dijk(c,:) &gt; 0 &amp; clegalv);
+0083       cmembers = find(graph.z == c &amp; objmovablev);
+0084       memmat = repmat(cmembers, length(ds), 1);
+0085       col1 = [col1; memmat(:)]; 
+0086       col2 = [col2; repmat(ds', length(cmembers),1)]; 
+0087     <span class="keyword">end</span>
+0088     sw1 = [nan*ones(length(col1), 1), col1, graph.compinds(col2,:)];
+0089     sw2 = nan*ones(size(sw1));
+0090   <span class="keyword">else</span>
+0091     col1 = repmat(objmovable, length(clegal), 1);
+0092     sw1 = [nan*ones(prod(size(col1)),1), col1(:), <span class="keyword">...</span>
+0093      repmat(graph.compinds(clegal,:), length(objmovable), 1)];
+0094     sw2 = nan*ones(size(sw1));
+0095   <span class="keyword">end</span>
+0096 <span class="keyword">elseif</span> whole    
+0097   nnode = size(graph.adjcluster,1);
+0098   <span class="comment">% cluster nodes that are free to accept objects</span>
+0099   clegal = setdiff(1:nnode, graph.illegal); 
+0100   clegalv = zeros(1,nnode); clegalv(clegal) = 1;
+0101   <span class="comment">% cluster nodes whose objects we can steal</span>
+0102   csource = <a href="#_sub4" class="code" title="subfunction csource = sourcecls(graph, i)">sourcecls</a>(graph);
+0103   csourcev= zeros(1,nnode); csourcev(csource) = 1;
+0104   <span class="keyword">if</span> fastflag
+0105     dijk = <a href="dijkstra.html" class="code" title="function [D,P] = dijk(A,s,t)">dijkstra</a>(graph.adjclustersym);
+0106     col1 = []; col2 = []; col1a= []; col2a = [];
+0107     <span class="keyword">for</span> c = csource
+0108       ds = find(dijk(c,:) &lt;= graphngb &amp; dijk(c,:) &gt; 0 &amp; clegalv);
+0109       col1 = [col1; c*ones(length(ds),1)]; col2 = [col2; ds']; 
+0110       swopts = find(dijk(c,:) &lt;= graphngb &amp; dijk(c,:) &gt; 0 &amp; csourcev);
+0111       <span class="comment">% don't want to try swaps twice</span>
+0112       swopts = swopts(swopts &gt; c);
+0113       col1a = [col1a; c*ones(length(swopts),1)]; col2a = [col2a; swopts'];
+0114     <span class="keyword">end</span>
+0115     sw1 = [nan*ones(length(col1), 1), col1, graph.compinds(col2,:)];
+0116     sw2 = nan*ones(size(sw1));
+0117     sw1 = [sw1;nan*ones(size(col1a)), col1a, graph.compinds(col2a,:)];
+0118     sw2 = [sw2;nan*ones(size(col1a)), col2a,  graph.compinds(col1a,:)];
+0119   <span class="keyword">else</span>
+0120     <span class="comment">% moves</span>
+0121     col1 = repmat(csource, length(clegal),1);
+0122     sw1 = [nan*ones(prod(size(col1)), 1), col1(:), <span class="keyword">...</span>
+0123        repmat(graph.compinds(clegal,:), length(csource), 1)];
+0124     sw2 = nan*ones(size(sw1));
+0125     <span class="comment">% swaps (only bother with swaps of occupied nodes)</span>
+0126     pairs = nchoosek(csource, 2);
+0127     col1 = pairs(:,1); col2 = pairs(:,2);
+0128     sw1 = [sw1;nan*ones(size(col1)), col1,  graph.compinds(col2,:)];
+0129     sw2 = [sw2;nan*ones(size(col1)), col2,  graph.compinds(col1,:)];
+0130   <span class="keyword">end</span>
+0131 <span class="keyword">else</span> <span class="comment">% within component moves/swaps</span>
+0132   <span class="comment">% cluster nodes that are free to accept objects</span>
+0133   clegal = setdiff(1:graph.components{comp}.nodecount,<span class="keyword">...</span>
+0134          graph.components{comp}.illegal);
+0135   clegalv = zeros(1,graph.components{comp}.nodecount); clegalv(clegal) = 1;
+0136   <span class="comment">% cluster nodes whose objects we can steal</span>
+0137   csourcemove = <a href="#_sub4" class="code" title="subfunction csource = sourcecls(graph, i)">sourcecls</a>(graph, comp);
+0138   csourcemovev= zeros(1,graph.components{comp}.nodecount);
+0139   csourcemovev(csourcemove) = 1;
+0140   csourceswap = unique(graph.components{comp}.z);
+0141   csourceswapv= zeros(1,graph.components{comp}.nodecount);
+0142   csourceswapv(csourceswap) = 1;
+0143   <span class="keyword">if</span> fastflag
+0144     dijk = <a href="dijkstra.html" class="code" title="function [D,P] = dijk(A,s,t)">dijkstra</a>(graph.components{comp}.adjsym);
+0145     col1 = []; col2 = []; 
+0146     <span class="keyword">for</span> c = csourcemove
+0147       ds = find(dijk(c,:) &lt;= graphngb &amp; dijk(c,:) &gt; 0 &amp; clegalv);
+0148       col1 = [col1; c*ones(length(ds),1)]; col2 = [col2; ds']; 
+0149     <span class="keyword">end</span>
+0150     sw1 =[comp*ones(length(col1),1),col1,nan*ones(length(col1), graph.ncomp)];
+0151     <span class="keyword">if</span> isempty(sw1) 
+0152       sw1 = zeros(0, graph.ncomp+2);
+0153     <span class="keyword">else</span>
+0154       sw1(:, 2+comp) = col2; 
+0155     <span class="keyword">end</span>
+0156     sw2 = nan*ones(size(sw1));
+0157 
+0158     col1 = []; col2 = [];
+0159     <span class="keyword">for</span> c = csourceswap
+0160       ds = find(dijk(c,:) &lt;= graphngb &amp; dijk(c,:) &gt; 0 &amp; csourceswapv);
+0161       <span class="comment">% don't want to try swaps twice</span>
+0162       ds = ds(ds &gt; c);
+0163       col1 = [col1; c*ones(length(ds),1)]; col2 = [col2; ds']; 
+0164     <span class="keyword">end</span>
+0165     sw1b =[comp*ones(length(col1),1),col1,nan*ones(length(col1), graph.ncomp)];
+0166     sw2b =[comp*ones(length(col1),1),col2,nan*ones(length(col1), graph.ncomp)];
+0167     <span class="keyword">if</span> isempty(sw1b) 
+0168       sw1b = zeros(0, graph.ncomp+2); sw2b = sw1b;
+0169     <span class="keyword">else</span>
+0170       sw1b(:, 2+comp) = col2; 
+0171       sw2b(:, 2+comp) = col1; 
+0172     <span class="keyword">end</span>
+0173     sw1 = [sw1; sw1b];
+0174     sw2 = [sw2; sw2b];
+0175   <span class="keyword">else</span> 
+0176     <span class="comment">% moves</span>
+0177     col1 = repmat(csourcemove, 1, length(clegal));
+0178     sw1 = [comp*ones(size(col1')), col1', <span class="keyword">...</span>
+0179            nan*ones(length(col1), graph.ncomp)];
+0180     col2 = repmat(clegal, length(csourcemove), 1);
+0181     sw1(:, 2+comp) = col2(:); 
+0182     sw2 = nan*ones(size(sw1));
+0183   
+0184     <span class="comment">% swaps (only bother with swaps of occupied nodes)</span>
+0185     <span class="keyword">if</span> length(csourceswap) &gt; 1
+0186       pairs = nchoosek(csourceswap, 2);
+0187     <span class="keyword">else</span>
+0188       pairs = [1 1];
+0189     <span class="keyword">end</span>
+0190     col1 = pairs(:,1); col2 = pairs(:,2);
+0191     sw1b = [comp*ones(size(col1)), col1, nan*ones(length(col1), graph.ncomp)];
+0192     sw1b(:, 2+comp) = col2;
+0193     sw2b = [comp*ones(size(col1)), col2, nan*ones(length(col1), graph.ncomp)];
+0194     sw2b(:, 2+comp) = col1;
+0195     sw1 = [sw1; sw1b];
+0196     sw2 = [sw2; sw2b];
+0197   <span class="keyword">end</span>
+0198 <span class="keyword">end</span> 
+0199 
+0200 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0201 <span class="comment">% sw1 and sw2 indicate  swaps/moves to make</span>
+0202 <span class="comment">%    format: [c, j, z1, z2, z3, ..., zn]</span>
+0203 <span class="comment">%    sw2   : may contain infs (for rows that are moves)</span>
+0204        
+0205 <a name="_sub2" href="#_subfunctions" class="code">function graph = doswap(graph, sw1, sw2, oflag, ps); </a>
+0206 
+0207 <span class="keyword">if</span> oflag            <span class="comment">% object move</span>
+0208   obj = sw1(2);
+0209   <span class="keyword">for</span> i=1:graph.ncomp
+0210     graph.components{i}.z(obj) = sw1(2+i);
+0211   <span class="keyword">end</span>
+0212 <span class="keyword">elseif</span> ~isnan(sw1(1))        <span class="comment">% within component move/swap</span>
+0213   c = sw1(1); cl = sw1(2);
+0214   oldz = graph.components{c}.z; newz = oldz;
+0215   newz(oldz == cl) = sw1(2+c); 
+0216   c2 = sw2(1); cl2 = sw2(2);
+0217   <span class="keyword">if</span> ~isnan(c2)
+0218     newz(oldz == cl2) = sw2(2+c); 
+0219   <span class="keyword">end</span>
+0220   graph.components{c}.z = newz;
+0221 <span class="keyword">else</span>                <span class="comment">% move/swap at highest level</span>
+0222   cl = sw1(2); oldz = graph.z; 
+0223   clmembers = find(oldz == cl);
+0224   <span class="keyword">for</span> i=1:graph.ncomp
+0225     graph.components{i}.z(clmembers) = sw1(2+i);
+0226   <span class="keyword">end</span>
+0227   cl2 = sw2(2);
+0228   <span class="keyword">if</span> ~isnan(cl2)
+0229     clmembers = find(oldz == cl2);
+0230     <span class="keyword">for</span> i=1:graph.ncomp
+0231       graph.components{i}.z(clmembers) = sw2(2+i);
+0232     <span class="keyword">end</span>
+0233   <span class="keyword">end</span>
+0234 <span class="keyword">end</span>
+0235 graph = <a href="combinegraphs.html" class="code" title="function graph = combinegraphs(graph, ps, varargin)">combinegraphs</a>(graph, ps, <span class="string">'zonly'</span>, 1);
+0236 
+0237 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0238 <span class="comment">% find objects that can be moved</span>
+0239 <a name="_sub3" href="#_subfunctions" class="code">function js = sourceobjs(graph)</a>
+0240 <span class="keyword">switch</span> graph.type
+0241   <span class="keyword">case</span>{<span class="string">'hierarchy'</span>, <span class="string">'dirhierarchynoself'</span>, <span class="string">'dirchain'</span>, <span class="string">'dirring'</span>,<span class="keyword">...</span>
+0242        <span class="string">'dirhierarchy'</span>, <span class="string">'dirchainnoself'</span>, <span class="string">'dirringnoself'</span>, <span class="string">'undirintree'</span>,<span class="keyword">...</span>
+0243        <span class="string">'undirhierarchynoself'</span>, <span class="string">'undirchain'</span>, <span class="string">'undirchainnoself'</span>, <span class="keyword">...</span>
+0244        <span class="string">'undirring'</span>, <span class="string">'undirringnoself'</span>}
+0245     [extcls intcls]= <a href="#_sub5" class="code" title="subfunction [extcls intcls]= cltypes(graph, i)">cltypes</a>(graph,1);
+0246     inds = ones(1, graph.objcount);
+0247     <span class="keyword">for</span> i = intcls
+0248       <span class="keyword">if</span> sum(graph.z == i) == 1
+0249         inds(graph.z == i) = 0;
+0250       <span class="keyword">end</span>
+0251     <span class="keyword">end</span>
+0252     js = find(inds);
+0253   <span class="keyword">otherwise</span>
+0254     js = 1:graph.objcount;
+0255 <span class="keyword">end</span>
+0256 
+0257 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0258 <span class="comment">% find clusters that can be moved</span>
+0259 <a name="_sub4" href="#_subfunctions" class="code">function csource = sourcecls(graph, i)</a>
+0260 
+0261 <span class="keyword">if</span> nargin &lt; 2
+0262   csource = unique(graph.z);
+0263 <span class="keyword">else</span>
+0264   csource = unique(graph.components{i}.z);
+0265 <span class="keyword">end</span>
+0266 
+0267 <span class="keyword">switch</span> graph.type
+0268   <span class="keyword">case</span>{<span class="string">'hierarchy'</span>, <span class="string">'dirtree'</span>, <span class="string">'dirhierarchynoself'</span>, <span class="string">'undirhierarchy'</span>,<span class="keyword">...</span>
+0269        <span class="string">'undirhierarchynoself'</span>}
+0270     [extcls intcls]= <a href="#_sub5" class="code" title="subfunction [extcls intcls]= cltypes(graph, i)">cltypes</a>(graph,1);
+0271     csource = intersect(csource, extcls);
+0272 <span class="keyword">end</span>
+0273 
+0274 
+0275 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0276 <span class="comment">% find external clusters and internal clusters in component i</span>
+0277 <a name="_sub5" href="#_subfunctions" class="code">function [extcls intcls]= cltypes(graph, i)</a>
+0278 <span class="comment">% find clusters that can be moved.</span>
+0279 adj = graph.components{i}.adjsym;
+0280 extcls = find(sum(adj) &lt;= 1);
+0281 intcls = setdiff(1:graph.components{i}.nodecount, extcls);
+0282 
+0283</pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

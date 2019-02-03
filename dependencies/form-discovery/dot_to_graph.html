@@ -1,0 +1,176 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of dot_to_graph</title>
+  <meta name="keywords" content="dot_to_graph">
+  <meta name="description" content="[Adj, labels, x, y] = dot_to_graph(filename)">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>dot_to_graph
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>[Adj, labels, x, y] = dot_to_graph(filename)</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [Adj, labels, x, y] = dot_to_graph(filename) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> [Adj, labels, x, y] = dot_to_graph(filename)
+ Extract an adjacency matrix, node labels, and layout (nodes coordinates) 
+ from GraphViz file       http://www.research.att.com/sw/tools/graphviz
+
+ INPUT:  'filename' - the file in DOT format containing the graph layout.
+ OUTPUT: 'Adj' - an adjacency matrix with sequentially numbered edges; 
+     'labels'  - a character array with the names of the nodes of the graph;
+          'x'  - a row vector with the x-coordinates of the nodes in 'filename';
+          'y'  - a row vector with the y-coordinates of the nodes in 'filename'.
+
+ NOTEs: not guaranted to parse ANY GraphViz file. Debugged on undirected 
+       sample graphs from GraphViz(Heawood, Petersen, ER, ngk10_4, process). 
+       Complaines about RecursionLimit on huge graphs.
+       Ignores singletons (disjoint nodes). Handles loops (arc to self).          
+ Sample DOT code &quot;ABC.dot&quot;, read by [Adj, labels, x, y] = dot_to_graph('ABC.dot')
+ Plot by    draw_graph(adj&gt;0, labels, zeros(size(x,2),1), x, y);  % from BNT
+ digraph G {
+       A [pos=&quot;28,31&quot;];
+       B [pos=&quot;74,87&quot;];
+       A -- B [pos=&quot;e,61,71 41,47 46,53 50,58 55,64&quot;];
+ }
+                                                last modified: 24 Feb 2004
+ by Dr. Leon Peshkin: pesha @ ai.mit.edu | http://www.ai.mit.edu/~pesha 
+  &amp; Alexi Savov:  asavov @ wustl.edu |  http://artsci.wustl.edu/~azsavov</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="mysetdiff.html" class="code" title="function C = mysetdiff(A,B)">mysetdiff</a>	MYSETDIFF Set difference of two sets of positive integers (much faster than built-in setdiff)</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="draw_dot.html" class="code" title="function [xret, yret, labels] = draw_dot(adj, labels, varargin);">draw_dot</a>	</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [Adj, labels, x, y] = dot_to_graph(filename)</a>
+0002 
+0003 <span class="comment">% [Adj, labels, x, y] = dot_to_graph(filename)</span>
+0004 <span class="comment">% Extract an adjacency matrix, node labels, and layout (nodes coordinates)</span>
+0005 <span class="comment">% from GraphViz file       http://www.research.att.com/sw/tools/graphviz</span>
+0006 <span class="comment">%</span>
+0007 <span class="comment">% INPUT:  'filename' - the file in DOT format containing the graph layout.</span>
+0008 <span class="comment">% OUTPUT: 'Adj' - an adjacency matrix with sequentially numbered edges;</span>
+0009 <span class="comment">%     'labels'  - a character array with the names of the nodes of the graph;</span>
+0010 <span class="comment">%          'x'  - a row vector with the x-coordinates of the nodes in 'filename';</span>
+0011 <span class="comment">%          'y'  - a row vector with the y-coordinates of the nodes in 'filename'.</span>
+0012 <span class="comment">%</span>
+0013 <span class="comment">% NOTEs: not guaranted to parse ANY GraphViz file. Debugged on undirected</span>
+0014 <span class="comment">%       sample graphs from GraphViz(Heawood, Petersen, ER, ngk10_4, process).</span>
+0015 <span class="comment">%       Complaines about RecursionLimit on huge graphs.</span>
+0016 <span class="comment">%       Ignores singletons (disjoint nodes). Handles loops (arc to self).</span>
+0017 <span class="comment">% Sample DOT code &quot;ABC.dot&quot;, read by [Adj, labels, x, y] = dot_to_graph('ABC.dot')</span>
+0018 <span class="comment">% Plot by    draw_graph(adj&gt;0, labels, zeros(size(x,2),1), x, y);  % from BNT</span>
+0019 <span class="comment">% digraph G {</span>
+0020 <span class="comment">%       A [pos=&quot;28,31&quot;];</span>
+0021 <span class="comment">%       B [pos=&quot;74,87&quot;];</span>
+0022 <span class="comment">%       A -- B [pos=&quot;e,61,71 41,47 46,53 50,58 55,64&quot;];</span>
+0023 <span class="comment">% }</span>
+0024 <span class="comment">%                                                last modified: 24 Feb 2004</span>
+0025 <span class="comment">% by Dr. Leon Peshkin: pesha @ ai.mit.edu | http://www.ai.mit.edu/~pesha</span>
+0026 <span class="comment">%  &amp; Alexi Savov:  asavov @ wustl.edu |  http://artsci.wustl.edu/~azsavov</span>
+0027 
+0028        <span class="comment">%  UNCOMMENT, but beware -- SLOW CHECK !!!!</span>
+0029 <span class="comment">%if ~exist(filename)                % Checks whether the specified file exists.</span>
+0030 <span class="comment">%   error('* * * File does not exist or could not be found. * * *');     return;</span>
+0031 <span class="comment">%end;</span>
+0032 
+0033 lines = textread(filename,<span class="string">'%s'</span>,<span class="string">'delimiter'</span>,<span class="string">'\n'</span>,<span class="string">'commentstyle'</span>,<span class="string">'c'</span>);  <span class="comment">% Read file into cell array of lines</span>
+0034 dot_lines = strvcat(lines);                                           <span class="comment">% ignoring C-style comments</span>
+0035 
+0036 <span class="keyword">if</span> isempty(findstr(dot_lines(1,:), <span class="string">'graph '</span>))                  <span class="comment">% Is this a DOT file ?</span>
+0037    error(<span class="string">'* * * File does not appear to be in valid DOT format. * * *'</span>);    <span class="keyword">return</span>;
+0038 <span class="keyword">end</span>;
+0039 
+0040 Nlns = size(dot_lines,1);             <span class="comment">% The number of lines;</span>
+0041 labels = {};
+0042 unread = 1:Nlns;             <span class="comment">% 'unread' list of lines which has not been examined yet</span>
+0043 edge_id = 1;
+0044 <span class="keyword">for</span> line_ndx = 1:Nlns          <span class="comment">% This section sets the adjacency matrix entry A(Lnode,Rnode) = edge_id.</span>
+0045     line = dot_lines(line_ndx,:);
+0046     Ddash_pos = strfind(line, <span class="string">' -- '</span>) + 1;  <span class="comment">% double dash positions</span>
+0047     arrow_pos = strfind(line, <span class="string">' -&gt; '</span>) + 1;  <span class="comment">% arrow  dash positions</span>
+0048     tokens = strread(line,<span class="string">'%s'</span>,<span class="string">'delimiter'</span>,<span class="string">' &quot;'</span>);
+0049     left_bound = 1;
+0050     <span class="keyword">for</span> dash_pos = [Ddash_pos arrow_pos];  <span class="comment">% if empty - not a POS line</span>
+0051         Lnode = sscanf(line(left_bound:dash_pos -2), <span class="string">'%s'</span>);
+0052         Rnode = sscanf(line(dash_pos +3 : length(line)-1),<span class="string">'%s'</span>,1);
+0053         Lndx = strmatch(Lnode, labels, <span class="string">'exact'</span>);
+0054         <span class="keyword">if</span> isempty(Lndx)         <span class="comment">% extend our list of labels</span>
+0055             labels{end+1} = Lnode;
+0056             Lndx = length(labels);
+0057         <span class="keyword">end</span>
+0058         Rndx = strmatch(Rnode, labels, <span class="string">'exact'</span>);
+0059         <span class="keyword">if</span> isempty(Rndx)
+0060             labels{end+1} = Rnode;
+0061             Rndx = length(labels);
+0062         <span class="keyword">end</span>
+0063         Adj(Lndx, Rndx) = edge_id;;
+0064         <span class="keyword">if</span>  ismember(dash_pos, Ddash_pos)  <span class="comment">% The edge is undirected, A(Rndx,LndxL) is also set to 1;</span>
+0065             Adj(Rndx, Lndx) = edge_id;
+0066         <span class="keyword">end</span>
+0067         edge_id = edge_id + 1; 
+0068         left_bound = dash_pos + 3;
+0069         unread = <a href="mysetdiff.html" class="code" title="function C = mysetdiff(A,B)">mysetdiff</a>(unread, line_ndx); 
+0070     <span class="keyword">end</span>
+0071 <span class="keyword">end</span>
+0072 Nvrt = length(labels);  <span class="comment">% number of vertices we found  [Do we ever have singleton vertices ???]</span>
+0073 <span class="comment">% labels = strvcat(labels); % could convert to the searchable array</span>
+0074 x = zeros(1, Nvrt); 
+0075 y = zeros(1, Nvrt);
+0076 lst_node = 0;
+0077         <span class="comment">% Find node's position coordinates if they are contained in 'filename'.</span>
+0078 <span class="keyword">for</span> line_ndx = unread        <span class="comment">% Look for node's coordiantes among the 'unread' lines.</span>
+0079     line = dot_lines(line_ndx,:);
+0080     bra_pos  = strfind(line, <span class="string">'['</span>);      <span class="comment">% has to have &quot;[&quot; if it has the lable</span>
+0081     pos_pos = strfind(line, <span class="string">'pos'</span>);     <span class="comment">% position of the &quot;pos&quot;</span>
+0082     <span class="keyword">for</span> node = 1:Nvrt     <span class="comment">% look through the list of labels</span>
+0083         <span class="comment">%  THE NEXT STATEMENT we assume no label is substring of any other label</span>
+0084         lbl_pos = strfind(line, labels{node});
+0085         <span class="keyword">if</span> ((~isempty(lbl_pos)) &amp; (~isempty(bra_pos)) &amp; (x(node) == 0))  <span class="comment">% make sure we have not seen it</span>
+0086             <span class="keyword">if</span> (lbl_pos(1) &lt; bra_pos(1))  <span class="comment">% label has to be to the left of braket</span>
+0087                 lst_node = node;
+0088             <span class="keyword">end</span>
+0089         <span class="keyword">end</span>
+0090     <span class="keyword">end</span>
+0091     <span class="keyword">if</span> (~isempty(pos_pos) &amp; lst_node)   <span class="comment">% this line contains SOME position</span>
+0092         [node_pos] = sscanf(line(pos_pos:length(line)), <span class="string">' pos  = &quot;%d,%d&quot;'</span>)';
+0093         x(lst_node) = node_pos(1);
+0094         y(lst_node) = node_pos(2);
+0095         lst_node = 0;   <span class="comment">%  not to assign position several times</span>
+0096     <span class="keyword">end</span>
+0097 <span class="keyword">end</span>
+0098 
+0099 <span class="keyword">if</span> (isempty(find(x)) &amp; (nargout &gt; 2))   <span class="comment">% If coordinates were requested, but not found in 'filename'.</span>
+0100     warning(<span class="string">'File does not contain node coordinates.'</span>);
+0101 <span class="keyword">else</span>
+0102     x = .9*(x-min(x))/(range(x)+1)+.05;  <span class="comment">% normalise and push off margins</span>
+0103     <span class="keyword">if</span> range(y) == 0, y = .5*ones(size(y)); <span class="keyword">else</span>, y = .9*(y-min(y))/range(y)+.05; <span class="keyword">end</span>
+0104 <span class="keyword">end</span>;
+0105 <span class="keyword">if</span> ~(size(Adj,1)==size(Adj,2))           <span class="comment">% Make sure Adj is a square matrix. ?</span>
+0106     Adj = eye(max(size(Adj)),size(Adj,1))*Adj*eye(size(Adj,2),max(size(Adj)));
+0107 <span class="keyword">end</span>;</pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

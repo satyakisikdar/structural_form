@@ -1,0 +1,73 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of rellikefreqs</title>
+  <meta name="keywords" content="rellikefreqs">
+  <meta name="description" content="Compute probability of the data under the (relational) frequency model.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>rellikefreqs
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Compute probability of the data under the (relational) frequency model.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function ll = rellikefreqs(countvec, adjvec, sizevec, alphas, betas) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Compute probability of the data under the (relational) frequency model.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="dirmultloglike.html" class="code" title="function ll=dirmultloglike(alpha, counts)">dirmultloglike</a>	LL is the log likelihood of the data (counts) under the Dirichlet-multinomial</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="graph_like_rel.html" class="code" title="function [logI graph] = graph_like_rel(data, graph, ps)">graph_like_rel</a>	graph_like_rel(data, adj, beta, sigma): compute log p(DATA|GRAPH), where</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function ll = rellikefreqs(countvec, adjvec, sizevec, alphas, betas)</a>
+0002 
+0003 <span class="comment">% Compute probability of the data under the (relational) frequency model.</span>
+0004 
+0005 <span class="comment">% one parameter for each pair of latent classes</span>
+0006 hypcount = length(alphas);
+0007 symcount = length(countvec);
+0008 
+0009 allcounts = repmat(countvec, hypcount, 1); 
+0010 alladj= repmat(adjvec, hypcount, 1);
+0011 allalphas = repmat(alphas', 1, symcount);
+0012 allbetas = repmat(betas', 1, symcount);
+0013 allsizes = repmat(sizevec, hypcount,1);
+0014 
+0015 allalphas = allsizes.*(alladj.*allalphas + (1-alladj).*allbetas);
+0016 
+0017 <span class="comment">% assume flat prior over each pair of hyperparameters</span>
+0018 lls = <a href="dirmultloglike.html" class="code" title="function ll=dirmultloglike(alpha, counts)">dirmultloglike</a>(allalphas, allcounts);
+0019 
+0020 offset = max(lls);
+0021 ll = log(mean(exp(lls - offset)))+offset;
+0022 
+0023 <span class="comment">% ll is p(countvec|graph). Now compute p(data|countvec)</span>
+0024 sizevec(sizevec == 0)=1;
+0025 ll = ll - sum(countvec.*log(sizevec));
+0026 
+0027</pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

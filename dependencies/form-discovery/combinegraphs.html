@@ -1,0 +1,182 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of combinegraphs</title>
+  <meta name="keywords" content="combinegraphs">
+  <meta name="description" content="create direct product of components in graph.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>combinegraphs
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>create direct product of components in graph.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function graph = combinegraphs(graph, ps, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> create direct product of components in graph. 
+ 1) If given ZONLY flag, adjust class assignments only, or 
+ 2) also adjust graph.W
+    a) if given ORIGGRAPH, COMPIND and IMAP and ps.prodtied == 0 and 
+    graph.ncomp &gt; 1, copy across values from ORIGGRAPH.W (COMPIND and
+    IMAP tell us how to find them: IMAP maps nodes in component
+    COMPIND of GRAPH onto their equivalents in ORIGGRAPH.
+    b) else set graph.Wcluster to the graph product of the components.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="get_edgemap.html" class="code" title="function emap = get_edgemap(adj, varargin)">get_edgemap</a>	Create an edge map (EMAP) which associates each edge in ADJ with a</li><li><a href="subv2ind.html" class="code" title="function ndx = subv2ind(siz, subv)">subv2ind</a>	SUBV2IND Like the built-in sub2ind, but the subscripts are given as row vectors.</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="add_element.html" class="code" title="function g = add_element(g, compind, c, element, ps);">add_element</a>	add entity ELEMENT to cluster C1 of component COMPIND</li><li><a href="collapsedims.html" class="code" title="function [graph currscore overallchange nearmscores nearmgraphs] =collapsedims(graph, data, ps, epsilon, currscore,overallchange, loopmax, nearmscores, nearmgraphs, varargin);">collapsedims</a>	take graph with multiple components and squeeze out dimensions wherever</li><li><a href="makeemptygraph.html" class="code" title="function graph  = makeemptygraph(ps)">makeemptygraph</a>	Make a graph with one cluster and no objects.</li><li><a href="relgraphinit.html" class="code" title="function graph = relgraphinit(data, z, ps)">relgraphinit</a>	Create initial graph for relational data set DATA by using various</li><li><a href="runmodel.html" class="code" title="function [ll, graph, names, bestglls, bestgraph] = runmodel(ps, sind,dind, rind, savefile)">runmodel</a>	Given data set DIND, find the best instance of form SIND.</li><li><a href="simplify_graph.html" class="code" title="function graph = simplify_graph(graph, ps)">simplify_graph</a>	Try cleaning up GRAPH by removing unnecessary cluster nodes.</li><li><a href="split_node.html" class="code" title="function [graph c1 c2] = split_node(graph, compind, c, pind, part1, part2, ps)">split_node</a>	split node C in component CIND using production PIND and put PART1 and PART2</li><li><a href="subtreeattach.html" class="code" title="function graph = subtreeattach(graph, j, edgep, edgec, comp, ps, varargin);">subtreeattach</a>	attach subtree rooted at j to edge between edgep and edgec</li><li><a href="swapobjclust.html" class="code" title="function [graph currscore overallchange nearmscores nearmgraphs] =swapobjclust(graph, data, ps, comp, epsilon, currscore,overallchange, loopmax, nearmscores, nearmgraphs, varargin);">swapobjclust</a>	Try improving GRAPH by swapping clusters or individual objects</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function graph = combinegraphs(graph, ps, varargin)</a>
+0002 
+0003 <span class="comment">% create direct product of components in graph.</span>
+0004 <span class="comment">% 1) If given ZONLY flag, adjust class assignments only, or</span>
+0005 <span class="comment">% 2) also adjust graph.W</span>
+0006 <span class="comment">%    a) if given ORIGGRAPH, COMPIND and IMAP and ps.prodtied == 0 and</span>
+0007 <span class="comment">%    graph.ncomp &gt; 1, copy across values from ORIGGRAPH.W (COMPIND and</span>
+0008 <span class="comment">%    IMAP tell us how to find them: IMAP maps nodes in component</span>
+0009 <span class="comment">%    COMPIND of GRAPH onto their equivalents in ORIGGRAPH.</span>
+0010 <span class="comment">%    b) else set graph.Wcluster to the graph product of the components.</span>
+0011 
+0012 <span class="comment">% If some data are missing, assume they are marked with -1 in the original</span>
+0013 <span class="comment">% graph.z.</span>
+0014 
+0015 args = varargin;
+0016 origgraph = []; compind = 0; imap = []; 
+0017 zonly = 0;
+0018 <span class="keyword">for</span> i=1:2:length(args)
+0019   <span class="keyword">switch</span> args{i}
+0020    <span class="keyword">case</span> <span class="string">'origgraph'</span>, origgraph = args{i+1};
+0021    <span class="keyword">case</span> <span class="string">'compind'</span>,   compind   = args{i+1};
+0022    <span class="keyword">case</span> <span class="string">'imap'</span>,         imap      = args{i+1};
+0023    <span class="keyword">case</span> <span class="string">'zonly'</span>,     zonly     = args{i+1};
+0024   <span class="keyword">end</span>
+0025 <span class="keyword">end</span>
+0026 
+0027 <span class="keyword">for</span> i=1:graph.ncomp
+0028   compsizes(i) = size(graph.components{i}.adj,1);
+0029   graph.components{i}.nodemap=(1:size(graph.components{i}.adj,1))';
+0030   graph.components{i}.edgemap=<a href="get_edgemap.html" class="code" title="function emap = get_edgemap(adj, varargin)">get_edgemap</a>(graph.components{i}.adj);
+0031   graph.components{i}.edgemapsym=<a href="get_edgemap.html" class="code" title="function emap = get_edgemap(adj, varargin)">get_edgemap</a>(graph.components{i}.adjsym, <span class="keyword">...</span>
+0032                  <span class="string">'sym'</span>, 1 );
+0033 <span class="keyword">end</span>
+0034 
+0035 graph.compsizes = compsizes;
+0036 W = graph.components{1}.W;
+0037 adj = graph.components{1}.adj;
+0038 z   = graph.components{1}.z;
+0039 illegal = graph.components{1}.illegal;
+0040 
+0041 <span class="keyword">for</span> i = 2:graph.ncomp
+0042   na     = size(W,1);
+0043   Wb     = graph.components{i}.W; adjb = graph.components{i}.adj;  
+0044   nb = size(Wb,1); zb = graph.components{i}.z;
+0045   Wnew   = kron(eye(nb), W); adjnew = kron(eye(nb), adj); 
+0046   z = na*(zb-1)+z; 
+0047   lastcol = repmat(1:nb, na, 1); 
+0048   illegal = na*0:(nb-1)+illegal;
+0049 
+0050   <span class="keyword">for</span> j=1:i-1
+0051     graph.components{j}.nodemap=repmat(graph.components{j}.nodemap, nb,1);
+0052     graph.components{j}.edgemap= kron(eye(nb), graph.components{j}.edgemap);
+0053     graph.components{j}.edgemapsym= kron(eye(nb),<span class="keyword">...</span>
+0054        graph.components{j}.edgemapsym);
+0055   <span class="keyword">end</span>
+0056 
+0057   Wnewbunscram = kron(eye(na), Wb); adjnewbunscram = kron(eye(na), adjb);
+0058   sind = reshape(1:na*nb, nb,na)'; sind = sind(:);
+0059 
+0060   adj = adjnew + adjnewbunscram(sind, sind);
+0061   W = Wnew + Wnewbunscram(sind, sind);
+0062 
+0063   graph.components{i}.nodemap = repmat(graph.components{i}.nodemap, na,1);
+0064   graph.components{i}.nodemap = graph.components{i}.nodemap(sind);
+0065   newillegal = graph.components{i}.illegal;
+0066   illind = zeros(1, nb*na); illind(nb*0:(na-1)+newillegal) = 1;
+0067   illegal = union(newillegal, find(illind(sind)));
+0068 
+0069   graph.components{i}.edgemap = kron(eye(na), graph.components{i}.edgemap);
+0070   graph.components{i}.edgemap = graph.components{i}.edgemap(sind,sind);
+0071   graph.components{i}.edgemapsym = <span class="keyword">...</span>
+0072                 kron(eye(na),graph.components{i}.edgemapsym);
+0073   graph.components{i}.edgemapsym = graph.components{i}.edgemapsym(sind,sind);
+0074 <span class="keyword">end</span>
+0075 
+0076 graph.compinds= [];
+0077 graph.globinds = zeros(compsizes);
+0078 <span class="keyword">for</span> i = 1:graph.ncomp
+0079   <span class="comment">% analysis: components of each node at highest level</span>
+0080   graph.compinds(:,i) = graph.components{i}.nodemap;
+0081 <span class="keyword">end</span>
+0082 inds = <a href="subv2ind.html" class="code" title="function ndx = subv2ind(siz, subv)">subv2ind</a>(compsizes, graph.compinds);
+0083 <span class="comment">% synthesis: map component nodes to combined node</span>
+0084 graph.globinds(inds) = 1:size(adj,1);
+0085 
+0086 obsind = find(graph.z&gt;=0);
+0087 graph.z(obsind) = z(obsind);
+0088 graph.illegal = illegal;
+0089 nobj = length(obsind);
+0090 <span class="keyword">if</span> ~zonly
+0091   graph.adjcluster = adj;
+0092   graph.adjclustersym = double(graph.adjcluster | graph.adjcluster'); 
+0093   graph.Wcluster = W;
+0094   doubleWcluster = repmat(0, size(graph.Wcluster)); 
+0095   doubleWcluster(graph.adjcluster &amp; graph.adjcluster')= <span class="keyword">...</span>
+0096     graph.Wcluster(graph.adjcluster &amp; graph.adjcluster');
+0097   graph.Wclustersym = graph.Wcluster+graph.Wcluster'- <span class="keyword">...</span>
+0098             doubleWcluster;
+0099 <span class="keyword">end</span>
+0100 
+0101 <span class="keyword">if</span> ~zonly &amp;&amp; ~ps.prodtied  &amp;&amp; graph.ncomp &gt; 1 &amp;&amp;  ~isempty(origgraph)
+0102   <span class="comment">% copy across values from origgraph.Wcluster</span>
+0103   [rind cind] = find(graph.adjcluster);
+0104   oldcomps = graph.compinds;
+0105   oldcomps(:,compind) = imap(oldcomps(:, compind));
+0106   oldedgersind= <a href="subv2ind.html" class="code" title="function ndx = subv2ind(siz, subv)">subv2ind</a>(origgraph.compsizes, oldcomps(rind,:));  
+0107   oldedgers = origgraph.globinds(oldedgersind);
+0108   oldedgecsind= <a href="subv2ind.html" class="code" title="function ndx = subv2ind(siz, subv)">subv2ind</a>(origgraph.compsizes, oldcomps(cind,:));  
+0109   oldedgecs = origgraph.globinds(oldedgecsind);
+0110   oldW= origgraph.Wcluster;
+0111   oldedgelengths = oldW(sub2ind(size(oldW),oldedgers, oldedgecs));
+0112   <span class="keyword">if</span> size(oldW,1)== 1 oldW = 1; <span class="keyword">end</span>
+0113   oldedgelengths(oldedgelengths == 0) = median(oldW(oldW &gt; 0));
+0114   newW = graph.adjcluster; 
+0115   newW(find(adj)) = oldedgelengths;
+0116   graph.Wcluster = newW;
+0117 <span class="keyword">end</span>
+0118   
+0119 fullW=zeros(size(W,1)+nobj);
+0120 leafinds = sub2ind(size(fullW), nobj+z(obsind), 1:nobj);
+0121 fullW(leafinds)=graph.leaflengths(obsind);
+0122 fullW(nobj+1:<span class="keyword">end</span>, nobj+1:end)=graph.Wcluster;
+0123 graph.W = fullW;
+0124 graph.adj = fullW&gt;0;
+0125 graph.adjsym = (graph.adj | graph.adj'); 
+0126 graph.Wsym = fullW;
+0127 Wtr = fullW';
+0128 graph.Wsym(graph.adj') = Wtr(graph.adj');
+0129</pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

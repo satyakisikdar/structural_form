@@ -1,0 +1,113 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of scaledata</title>
+  <meta name="keywords" content="scaledata">
+  <meta name="description" content="scale the data according to several strategies">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>scaledata
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>scale the data according to several strategies</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [data  ps]= scaledata(data, ps) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> scale the data according to several strategies</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="makesimlike.html" class="code" title="function data = makesimlike(data, ps)">makesimlike</a>	shift and scale DATA so that the maximum value in covariance is 1, and the</li><li><a href="simpleshiftscale.html" class="code" title="function data = simpleshiftscale(data, ps)">simpleshiftscale</a>	shift and scale data so that mean is zero, and largest covariance is 1</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="runmodel.html" class="code" title="function [ll, graph, names, bestglls, bestgraph] = runmodel(ps, sind,dind, rind, savefile)">runmodel</a>	Given data set DIND, find the best instance of form SIND.</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function ps = makechunks(data, ps);</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [data  ps]= scaledata(data, ps)</a>
+0002 
+0003 <span class="comment">% scale the data according to several strategies</span>
+0004 
+0005 <span class="keyword">switch</span> ps.runps.type
+0006   <span class="keyword">case</span> {<span class="string">'rel'</span>}
+0007     <span class="keyword">return</span> <span class="comment">% don't scale relational data</span>
+0008 <span class="keyword">end</span>
+0009 
+0010 <span class="keyword">if</span> sum(sum(isinf(data))) &gt; 0
+0011   ps.missingdata = 1;
+0012 <span class="keyword">else</span>
+0013   ps.missingdata = 0;
+0014 <span class="keyword">end</span>
+0015 
+0016 nobjects = size(data,1);
+0017 origdata = data;
+0018 dmean  = mean(data(~isinf(data)));
+0019 stdev = std(data(~isinf(data)));
+0020 ps = <a href="#_sub1" class="code" title="subfunction ps = makechunks(data, ps);">makechunks</a>(data,ps);
+0021 
+0022 <span class="keyword">if</span> strcmp(ps.runps.type, <span class="string">'sim'</span>)    <span class="comment">% similarity data</span>
+0023   <span class="keyword">switch</span> ps.simtransform
+0024     <span class="keyword">case</span>{<span class="string">'center'</span>}
+0025       <span class="comment">% Centering matrix</span>
+0026       Z=eye(nobjects)-ones(nobjects)*(1./nobjects);
+0027       data = Z*data*Z;
+0028     <span class="keyword">end</span>
+0029 <span class="keyword">elseif</span> strcmp(ps.runps.type, <span class="string">'feat'</span>)    <span class="comment">% feature data</span>
+0030   <span class="keyword">switch</span> ps.datatransform
+0031     <span class="keyword">case</span>{<span class="string">'simpleshiftscale'</span>}        <span class="comment">% make data zero mean, max covar 1</span>
+0032       data = <a href="simpleshiftscale.html" class="code" title="function data = simpleshiftscale(data, ps)">simpleshiftscale</a>(data, ps);
+0033     <span class="keyword">case</span>{<span class="string">'makesimlike'</span>}            <span class="comment">% make data look like similarity matrix</span>
+0034                     <span class="comment">% (max covar 1, min covar close to 0)</span>
+0035       data = <a href="makesimlike.html" class="code" title="function data = makesimlike(data, ps)">makesimlike</a>(data, ps);
+0036   <span class="keyword">end</span>
+0037   <span class="keyword">if</span> ~ps.missingdata
+0038     ps.runps.SS = data*data'/size(data,2);
+0039     ps.runps.chunkcount = size(data,1);
+0040   <span class="keyword">end</span>
+0041 <span class="keyword">end</span>
+0042 
+0043 ps = <a href="#_sub1" class="code" title="subfunction ps = makechunks(data, ps);">makechunks</a>(data,ps);
+0044 
+0045 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0046 <a name="_sub1" href="#_subfunctions" class="code">function ps = makechunks(data, ps);</a>
+0047 
+0048 <span class="keyword">if</span> ps.missingdata
+0049   <span class="comment">% create ps.runps.dataind</span>
+0050   datamask = ~isinf(data);
+0051   [b i j]=unique(datamask', <span class="string">'rows'</span>);
+0052   ps.runps.chunknum = size(b,1);
+0053   <span class="keyword">for</span> chunk = 1:size(b,1)
+0054     <span class="comment">% features and objects included in each chunk</span>
+0055     ps.runps.featind{chunk} = find(j==chunk);
+0056     ps.runps.objind{chunk} = find(b(chunk,:));
+0057     ps.runps.chunksize{chunk} = length(ps.runps.objind{chunk});
+0058     dtemp = data(ps.runps.objind{chunk}, ps.runps.featind{chunk});
+0059     ps.runps.chunkSS{chunk} = dtemp * dtemp' / length(ps.runps.featind{chunk});
+0060   <span class="keyword">end</span>
+0061 <span class="keyword">end</span>
+0062 
+0063 
+0064 
+0065</pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of countmatrix</title>
+  <meta name="keywords" content="countmatrix">
+  <meta name="description" content="GRAPH includes entities that are assigned to clusters. COUNTS specifies">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>countmatrix
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>GRAPH includes entities that are assigned to clusters. COUNTS specifies</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function counts = countmatrix(data, graph) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> GRAPH includes entities that are assigned to clusters. COUNTS specifies
+ the number of links between pairs of clusters.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="graph_like_rel.html" class="code" title="function [logI graph] = graph_like_rel(data, graph, ps)">graph_like_rel</a>	graph_like_rel(data, adj, beta, sigma): compute log p(DATA|GRAPH), where</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function counts = countmatrix(data, graph)</a>
+0002 
+0003 <span class="comment">% GRAPH includes entities that are assigned to clusters. COUNTS specifies</span>
+0004 <span class="comment">% the number of links between pairs of clusters.</span>
+0005 
+0006 nclass = size(graph.adjcluster,1) ;
+0007 nobj = graph.objcount;
+0008 counts=zeros(nclass);
+0009 <span class="keyword">for</span> i=1:nclass
+0010   clustmembers{i}=find(graph.z==i);
+0011 <span class="keyword">end</span>
+0012 
+0013 counts = size(graph.adj,1)-nobj;
+0014 
+0015 <span class="comment">% XXX vectorize this</span>
+0016 <span class="keyword">for</span> i=1:nclass
+0017   <span class="keyword">for</span> j=1:nclass
+0018     counts(i,j) = sum(sum(data(clustmembers{i}, clustmembers{j})));
+0019   <span class="keyword">end</span>
+0020 <span class="keyword">end</span>
+0021</pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

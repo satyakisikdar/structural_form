@@ -1,0 +1,140 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of draw_dot</title>
+  <meta name="keywords" content="draw_dot">
+  <meta name="description" content="">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>draw_dot
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong></strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [xret, yret, labels] = draw_dot(adj, labels, varargin); </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment">
+ [x, y, labels] = draw_dot(adj, lables)   draw a graph defined by adjacency matrix 
+  
+ Sample code illustrating use of graph_to_dot and dot_to_graph.m functions
+     for interfacing  GraphViz layout and Matlab UI powers  
+
+ (C) Dr. Leon Peshkin  pesha @ ai.mit.edu  /~pesha     24 Feb 2004</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="dot_to_graph.html" class="code" title="function [Adj, labels, x, y] = dot_to_graph(filename)">dot_to_graph</a>	[Adj, labels, x, y] = dot_to_graph(filename)</li><li><a href="graph_draw.html" class="code" title="function [x, y, h] = graph_draw(adj, varargin)">graph_draw</a>	[x, y, h] = graph_draw(adj, varargin)</li><li><a href="graph_to_dot.html" class="code" title="function graph_to_dot(adj, varargin)">graph_to_dot</a>	graph_to_dot(adj, VARARGIN)  Creates a GraphViz (AT&T) format file representing</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="best_split.html" class="code" title="function [ll, part1, part2, newgraph]=best_split(graph, compind, c, pind, data, seedpairs, ps)">best_split</a>	Choose the best split of cluster node C.</li><li><a href="gibbs_clean.html" class="code" title="function [ll graph] = gibbs_clean(graph, data, ps, varargin)">gibbs_clean</a>	SWAPTYPES: which swaps to include</li><li><a href="runmodel.html" class="code" title="function [ll, graph, names, bestglls, bestgraph] = runmodel(ps, sind,dind, rind, savefile)">runmodel</a>	Given data set DIND, find the best instance of form SIND.</li><li><a href="structurefit.html" class="code" title="function [ll, graph, bestgraphlls, bestgraph] =structurefit(data, ps, graph, savefile)">structurefit</a>	Fit a given structure to matrix DATA using parameters PS</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [xret, yret, labels] = draw_dot(adj, labels, varargin);</a>
+0002 <span class="comment">%</span>
+0003 <span class="comment">% [x, y, labels] = draw_dot(adj, lables)   draw a graph defined by adjacency matrix</span>
+0004 <span class="comment">%</span>
+0005 <span class="comment">% Sample code illustrating use of graph_to_dot and dot_to_graph.m functions</span>
+0006 <span class="comment">%     for interfacing  GraphViz layout and Matlab UI powers</span>
+0007 <span class="comment">%</span>
+0008 <span class="comment">% (C) Dr. Leon Peshkin  pesha @ ai.mit.edu  /~pesha     24 Feb 2004</span>
+0009 
+0010 
+0011 args=varargin;
+0012 xorig = []; yorig = [];
+0013 fontsz = [];
+0014 
+0015 <span class="comment">% for tiny nodes</span>
+0016 <span class="comment">%nodemult = 0.08;</span>
+0017 nodemult = 0.5;
+0018 <span class="keyword">for</span> i=1:2:length(args)
+0019   <span class="keyword">switch</span> args{i}
+0020    <span class="keyword">case</span> <span class="string">'pos'</span>, xorig=args{i+1}(1,:); yorig = args{i+1}(2,:);
+0021    <span class="keyword">case</span> <span class="string">'nodemult'</span>, nodemult = args{i+1};
+0022    <span class="keyword">case</span> <span class="string">'fontsz'</span>, fontsz= args{i+1};
+0023   <span class="keyword">end</span>
+0024 <span class="keyword">end</span>
+0025 
+0026 <span class="comment">%XXX</span>
+0027 <span class="comment">%if nargin == 2 &amp;&amp; length(labels) &lt; size(adj,1)</span>
+0028 <span class="comment">%  for j = length(labels)+1:size(adj,1)</span>
+0029 <span class="comment">%    labels{j} = '';</span>
+0030 <span class="comment">%  end</span>
+0031 <span class="comment">%end</span>
+0032 <span class="comment">%XXX</span>
+0033 
+0034 [n,m] = size(adj);
+0035    <span class="keyword">if</span> n ~= m, warning(<span class="string">'not a square adjacency matrix!'</span>); <span class="keyword">end</span>
+0036    <span class="keyword">if</span> isequal(triu(adj,1),tril(adj,-1)'), directed = 0; <span class="keyword">else</span>, directed = 1; <span class="keyword">end</span> 
+0037 adj = double(adj &gt; 0);    <span class="comment">% make sure it is a binary matrix cast to double type</span>
+0038       <span class="comment">% to be platform independant no use of directories in temporary filenames</span>
+0039 tmpDOTfile = <span class="string">'_GtDout.dot'</span>;           tmpLAYOUT  = <span class="string">'_LAYout.dot'</span>; 
+0040 <a href="graph_to_dot.html" class="code" title="function graph_to_dot(adj, varargin)">graph_to_dot</a>(adj, <span class="string">'directed'</span>, directed, <span class="string">'filename'</span>, tmpDOTfile); <span class="comment">% save in file</span>
+0041 <span class="keyword">if</span> ispc, shell = <span class="string">'dos'</span>; <span class="keyword">else</span>, shell = <span class="string">'unix'</span>; <span class="keyword">end</span>                <span class="comment">%  Which OS ?</span>
+0042  <span class="comment">%cmnd = strcat(shell,'(''neato -V'')');    % request version to check NEATO is there</span>
+0043  <span class="comment">%status = eval(cmnd);</span>
+0044  <span class="comment">%if status == 1,  warning('DOT/NEATO not accessible'); end</span>
+0045          <span class="comment">%  put all your favorite  NEATO attributes  here</span>
+0046 neato = <span class="string">'(''neato -Tdot  -Gmaxiter=25000 -Gregular'</span>; <span class="comment">% -Gstart=&quot;regular&quot; -Gregular</span>
+0047 neato = strcat([neato <span class="string">'-Gminlen=5 -Goverlap=false '</span>]);   <span class="comment">% minimal edge length, no overlap</span>
+0048 <span class="keyword">if</span> n &gt; 100   <span class="comment">% some extra NEATO options for over populated graphs</span>
+0049     neato = strcat([neato <span class="string">'-x'</span>]);      
+0050 <span class="keyword">end</span>
+0051 cmnd = strcat([shell neato <span class="string">' -o'</span> tmpLAYOUT <span class="string">' '</span> tmpDOTfile <span class="string">''')'</span>]);    <span class="comment">% -x compact</span>
+0052 status = eval(cmnd);                 <span class="comment">%  get NEATO to layout</span>
+0053 
+0054 [trash, names, x, y] = <a href="dot_to_graph.html" class="code" title="function [Adj, labels, x, y] = dot_to_graph(filename)">dot_to_graph</a>(tmpLAYOUT);  <span class="comment">% load NEATO layout</span>
+0055 num_names = str2num(char(names))';
+0056 nam_len = length(names);
+0057 <span class="keyword">if</span> nam_len &lt; n  <span class="comment">% plot singletons without coordinates all together in a lower left</span>
+0058     num_names(nam_len+1:n) = my_setdiff(1:n, num_names);
+0059     x(nam_len+1:n) = 0.05*ones(1,n-nam_len);
+0060     y(nam_len+1:n) = 0.05*ones(1,n-nam_len);
+0061     <span class="keyword">for</span> k = nam_len+1:n
+0062       names{k} = num2str(num_names(k));
+0063     <span class="keyword">end</span>
+0064 <span class="keyword">end</span>
+0065 
+0066 [ignore,lbl_ndx] = sort(num_names);  <span class="comment">% recover from dot_to_graph node_ID permutation</span>
+0067 xret = x; yret = y;
+0068 x = x(lbl_ndx); y = y(lbl_ndx);  
+0069 <span class="keyword">if</span> nargin == 1                                   <span class="comment">% if no labels were provided</span>
+0070   labels = names(lbl_ndx);
+0071 <span class="keyword">end</span>
+0072 
+0073 <span class="keyword">if</span> ~isempty(xorig)
+0074   <span class="comment">%x = xorig(lbl_ndx); y = yorig(lbl_ndx);</span>
+0075   x = xorig; y = yorig;
+0076 <span class="keyword">end</span>
+0077 
+0078            <span class="comment">% now pick a healthy font size and plot</span>
+0079 <span class="keyword">if</span> isempty(fontsz)
+0080   <span class="keyword">if</span> n &gt; 40, fontsz = 7; <span class="keyword">elseif</span> n &lt; 12, fontsz = 12; <span class="keyword">else</span> fontsz = 9; <span class="keyword">end</span> 
+0081 <span class="keyword">end</span>
+0082 <span class="comment">%clf; axis square      %  now plot</span>
+0083 [x, y, h] = <a href="graph_draw.html" class="code" title="function [x, y, h] = graph_draw(adj, varargin)">graph_draw</a>(adj, <span class="string">'node_labels'</span>, labels, <span class="string">'fontsize'</span>, fontsz, <span class="keyword">...</span>
+0084                        <span class="string">'node_shapes'</span>, zeros(size(x,2),1), <span class="string">'X'</span>, x, <span class="string">'Y'</span>, y,<span class="keyword">...</span>
+0085                <span class="string">'nodemult'</span>, nodemult);
+0086 system([<span class="string">'rm '</span>,  tmpLAYOUT]);
+0087 system([<span class="string">'rm '</span>,  tmpDOTfile]);
+0088 <span class="comment">%delete(tmpLAYOUT); delete(tmpDOTfile);     % clean up temporary files</span></pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

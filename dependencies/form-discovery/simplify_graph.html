@@ -1,0 +1,202 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of simplify_graph</title>
+  <meta name="keywords" content="simplify_graph">
+  <meta name="description" content="Try cleaning up GRAPH by removing unnecessary cluster nodes.">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>simplify_graph
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Try cleaning up GRAPH by removing unnecessary cluster nodes.</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function graph = simplify_graph(graph, ps) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Try cleaning up GRAPH by removing unnecessary cluster nodes.</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="combinegraphs.html" class="code" title="function graph = combinegraphs(graph, ps, varargin)">combinegraphs</a>	create direct product of components in graph.</li><li><a href="mysetdiff.html" class="code" title="function C = mysetdiff(A,B)">mysetdiff</a>	MYSETDIFF Set difference of two sets of positive integers (much faster than built-in setdiff)</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="best_split.html" class="code" title="function [ll, part1, part2, newgraph]=best_split(graph, compind, c, pind, data, seedpairs, ps)">best_split</a>	Choose the best split of cluster node C.</li><li><a href="collapsedims.html" class="code" title="function [graph currscore overallchange nearmscores nearmgraphs] =collapsedims(graph, data, ps, epsilon, currscore,overallchange, loopmax, nearmscores, nearmgraphs, varargin);">collapsedims</a>	take graph with multiple components and squeeze out dimensions wherever</li><li><a href="gibbs_clean.html" class="code" title="function [ll graph] = gibbs_clean(graph, data, ps, varargin)">gibbs_clean</a>	SWAPTYPES: which swaps to include</li><li><a href="graph_like_conn.html" class="code" title="function [logI graph] = graph_like_conn(data, graph, ps)">graph_like_conn</a>	Compute log P(DATA|GRAPH)</li><li><a href="runmodel.html" class="code" title="function [ll, graph, names, bestglls, bestgraph] = runmodel(ps, sind,dind, rind, savefile)">runmodel</a>	Given data set DIND, find the best instance of form SIND.</li><li><a href="spr.html" class="code" title="function [graph currscore overallchange nearmscores nearmgraphs] =spr(graph, data, ps, i, epsilon, currscore, overallchange, debug,nearmscores, nearmgraphs)">spr</a>	"Sub-tree pruning and regrafting": try changing a tree structured graph</li><li><a href="swapobjclust.html" class="code" title="function [graph currscore overallchange nearmscores nearmgraphs] =swapobjclust(graph, data, ps, comp, epsilon, currscore,overallchange, loopmax, nearmscores, nearmgraphs, varargin);">swapobjclust</a>	Try improving GRAPH by swapping clusters or individual objects</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function [adj W z includeind]= redundantinds(caseind, graph, i, adj, W, z,</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function graph = simplify_graph(graph, ps)</a>
+0002 
+0003 <span class="comment">% Try cleaning up GRAPH by removing unnecessary cluster nodes.</span>
+0004 
+0005 <span class="comment">% remove  cluster nodes we don't want</span>
+0006 <span class="comment">%    1) dangling cluster nodes (any node that's not an object node, but has</span>
+0007 <span class="comment">%                    exactly one (or zero) cluster neighbors and</span>
+0008 <span class="comment">%                    no object neighbors)</span>
+0009 <span class="comment">%    2) any cluster node with exactly two neighbors, one of which is a</span>
+0010 <span class="comment">%        cluster node</span>
+0011 
+0012 nobj = graph.objcount;
+0013 overallchange = 0;
+0014 origgraph = graph;
+0015 
+0016 <span class="keyword">for</span> i=1:graph.ncomp
+0017   <span class="comment">% dangling cluster nodes</span>
+0018   adj = graph.components{i}.adj; W = graph.components{i}.W; 
+0019   imap = 1:size(adj,1);
+0020   z = graph.components{i}.z; 
+0021   illegal = graph.components{i}.illegal;
+0022   cont = ones(1,3);
+0023   <span class="keyword">while</span> (sum(cont)) 
+0024     <span class="keyword">for</span> caseind = 1:3
+0025       ntot = size(adj,1);
+0026       occ = zeros(1,ntot);
+0027       occ(z) = 1;
+0028       [adj W z includeind] = <a href="#_sub1" class="code" title="subfunction [adj W z includeind]= redundantinds(caseind, graph, i, adj, W, z,">redundantinds</a>(caseind, graph, i, adj, W, z, <span class="keyword">...</span>
+0029                        occ, ps);
+0030       <span class="keyword">if</span> length(includeind) == ntot
+0031         cont(caseind) = 0; 
+0032       <span class="keyword">else</span>
+0033         cont(caseind) = 1;
+0034         overallchange = 1;
+0035     map = zeros(1, ntot); map(includeind) = 1:length(includeind);
+0036         z = map(z);
+0037         illegal = map(illegal); illegal = illegal(illegal&gt;0);
+0038         imap = imap(includeind);
+0039       <span class="keyword">end</span>
+0040     <span class="keyword">end</span>
+0041   <span class="keyword">end</span>
+0042 
+0043   <span class="keyword">if</span> overallchange
+0044     Wtr = W';
+0045     graph.components{i}.adj = adj;  graph.components{i}.W = W; 
+0046     graph.components{i}.adjsym = adj|adj';
+0047     graph.components{i}.Wsym = W; 
+0048     graph.components{i}.Wsym(logical(adj')) = Wtr(logical(adj'));
+0049     graph.components{i}.z = z; 
+0050     graph.components{i}.edgecount = sum(sum(adj));
+0051     graph.components{i}.edgecountsym = sum(sum(graph.components{i}.adjsym))/2;
+0052     graph.components{i}.illegal = illegal;
+0053     graph.components{i}.nodecount = size(adj,1); 
+0054     graph = <a href="combinegraphs.html" class="code" title="function graph = combinegraphs(graph, ps, varargin)">combinegraphs</a>(graph, ps, <span class="string">'origgraph'</span>, origgraph, <span class="string">'compind'</span>, i,<span class="keyword">...</span>
+0055               <span class="string">'imap'</span>, imap);
+0056     overallchange = 0;
+0057   <span class="keyword">end</span>
+0058 <span class="keyword">end</span>
+0059 
+0060 <span class="keyword">if</span> graph.objcount &lt; 30
+0061   <span class="keyword">return</span>
+0062 <span class="keyword">end</span>
+0063 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0064 <a name="_sub1" href="#_subfunctions" class="code">function [adj W z includeind]= redundantinds(caseind, graph, i, adj, W, z,</a><span class="keyword">...</span>
+0065                          occ, ps)
+0066 
+0067 <span class="comment">% XXX: should really apply these only if we haven't tied branch lengths. But</span>
+0068 <span class="comment">% since we only tie branches as a search heuristic right now, it doesn't matter</span>
+0069 <span class="comment">% too much.</span>
+0070 
+0071 cflag = 0;
+0072 <span class="keyword">switch</span> caseind
+0073   <span class="keyword">case</span>{1}
+0074     <span class="comment">% dangling cluster nodes (any unoccupied node with zero or exactly one</span>
+0075     <span class="comment">%    cluster neighbor</span>
+0076     removeind = find(sum(adj)+sum(adj')&lt;=1 &amp; occ == 0);
+0077   <span class="keyword">case</span>{2}
+0078     <span class="comment">% any unoccupied node with exactly two neighbors</span>
+0079     <span class="comment">% (but don't remove root of tree</span>
+0080     <span class="keyword">switch</span> graph.components{i}.type
+0081       <span class="keyword">case</span>{<span class="string">'tree'</span>} <span class="comment">%XXX: remove root for sure</span>
+0082         <span class="keyword">if</span> ps.cleanstrong
+0083           removeind= find(sum(adj)+sum(adj')==2 &amp; occ ==0 ) ;
+0084         <span class="keyword">else</span> <span class="comment">% don't remove root</span>
+0085           removeind= find(sum(adj)+sum(adj')==2 &amp; sum(adj) == 1 &amp; occ ==0 ) ;
+0086         <span class="keyword">end</span>
+0087       <span class="keyword">otherwise</span>
+0088         removeind= find(sum(adj)+sum(adj')==2 &amp; occ ==0 ) ;
+0089     <span class="keyword">end</span>
+0090     <span class="keyword">if</span> isempty(removeind) includeind = 1:size(adj,1); <span class="keyword">return</span>;  <span class="keyword">end</span>
+0091     removeind = removeind(1);
+0092     nbs = [find(adj(:, removeind))', find(adj(removeind,:))];
+0093     <span class="keyword">if</span> adj(nbs(2),removeind) <span class="comment">% nbs(2) is a parent</span>
+0094       nbs = fliplr(nbs);
+0095     <span class="keyword">end</span>
+0096     <span class="keyword">if</span> nbs(1) ~= nbs(2) <span class="comment">% special case when we simplify a 2 cluster ring</span>
+0097       adj(nbs(1),nbs(2)) = 1;
+0098       oldWind = sub2ind(size(W), [nbs(1:2), removeind, removeind], <span class="keyword">...</span>
+0099                  [removeind, removeind, nbs(1:2)]);
+0100       oldWs = W(oldWind); 
+0101       oldWs = oldWs(oldWs&gt;0);
+0102       W(nbs(1), nbs(2)) = 1/sum(1./oldWs); 
+0103     <span class="keyword">end</span>
+0104   <span class="keyword">case</span>{3} 
+0105     <span class="keyword">if</span> strcmp(graph.components{i}.type, <span class="string">'tree'</span>) <span class="comment">%&amp;&amp; ~ps.cleanstrong</span>
+0106       <span class="keyword">if</span> (ps.fixedall || ps.fixedinternal || ps.fixedexternal)
+0107         removeind = [];
+0108       <span class="keyword">else</span>
+0109     <span class="comment">% join pairs that have been split</span>
+0110         zcnts = hist(z, 1:size(adj,1));
+0111     singletons = find(zcnts == 1);
+0112     twosingleneighbors = <span class="keyword">...</span><span class="comment"> </span>
+0113       find(sum(adj(singletons,:),1) + sum(adj(:, singletons),2)' == 2);
+0114     <span class="keyword">if</span> ~isempty(twosingleneighbors)
+0115       parent = twosingleneighbors(1);
+0116       children = intersect(singletons, <span class="keyword">...</span>
+0117             find((adj(parent,:) | adj(:, parent)')));
+0118       z(z==children(2)) = children(1);
+0119       removeind = [children(2)];
+0120     <span class="keyword">else</span>
+0121           removeind = [];
+0122     <span class="keyword">end</span>
+0123       <span class="keyword">end</span>
+0124      <span class="keyword">else</span>
+0125        <span class="keyword">if</span> ~strcmp(ps.runps.type, <span class="string">'rel'</span>) &amp;&amp; <span class="keyword">...</span><span class="comment"> % not for relational data</span>
+0126       graph.ncomp == 1 <span class="comment">% don't want to do this for single dimensions of</span>
+0127                <span class="comment">% grids</span>
+0128          zcnts = hist(z, 1:size(adj,1));
+0129          <span class="comment">% any occupied node with one cluster parent and no cluster children</span>
+0130          removeindpar = find(sum(adj)==1 &amp; sum(adj')==0 &amp; zcnts == 1);
+0131          <span class="comment">% any occupied node with one cluster child and no cluster parents</span>
+0132          removeindch = find(sum(adj')==1 &amp; sum(adj)==0 &amp; zcnts == 1);
+0133          <span class="keyword">if</span> isempty([removeindpar, removeindch]) 
+0134          includeind = 1:size(adj,1); <span class="keyword">return</span>;  
+0135      <span class="keyword">end</span>
+0136      <span class="keyword">if</span> ~isempty(removeindpar)
+0137            removeind = removeindpar(1);
+0138            newz = find(adj(:, removeind));
+0139      <span class="keyword">else</span> 
+0140            removeind = removeindch(1);
+0141            newz = find(adj(removeind,:));
+0142          <span class="keyword">end</span>
+0143          obj = find(z == removeind);
+0144          z(obj) = newz;
+0145        <span class="keyword">else</span>
+0146          removeind = [];
+0147        <span class="keyword">end</span>
+0148     <span class="keyword">end</span>
+0149 <span class="keyword">end</span>
+0150 
+0151 includeind = <a href="mysetdiff.html" class="code" title="function C = mysetdiff(A,B)">mysetdiff</a>(1:size(adj,1), removeind);
+0152 adj = adj(includeind, includeind);
+0153 W = W(includeind, includeind);
+0154</pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

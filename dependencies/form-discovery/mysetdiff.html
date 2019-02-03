@@ -1,0 +1,76 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of mysetdiff</title>
+  <meta name="keywords" content="mysetdiff">
+  <meta name="description" content="MYSETDIFF Set difference of two sets of positive integers (much faster than built-in setdiff)">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>mysetdiff
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>MYSETDIFF Set difference of two sets of positive integers (much faster than built-in setdiff)</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function C = mysetdiff(A,B) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> MYSETDIFF Set difference of two sets of positive integers (much faster than built-in setdiff)
+ C = mysetdiff(A,B)
+ C = A \ B = { things in A that are not in B }</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="dot_to_graph.html" class="code" title="function [Adj, labels, x, y] = dot_to_graph(filename)">dot_to_graph</a>	[Adj, labels, x, y] = dot_to_graph(filename)</li><li><a href="simplify_graph.html" class="code" title="function graph = simplify_graph(graph, ps)">simplify_graph</a>	Try cleaning up GRAPH by removing unnecessary cluster nodes.</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function C = mysetdiff(A,B)</a>
+0002 <span class="comment">% MYSETDIFF Set difference of two sets of positive integers (much faster than built-in setdiff)</span>
+0003 <span class="comment">% C = mysetdiff(A,B)</span>
+0004 <span class="comment">% C = A \ B = { things in A that are not in B }</span>
+0005 
+0006 <span class="keyword">if</span> isempty(A)
+0007   ma = 0;
+0008 <span class="keyword">else</span>
+0009   ma = max(A);
+0010 <span class="keyword">end</span>
+0011 
+0012 <span class="keyword">if</span> isempty(B)
+0013   mb = 0;
+0014 <span class="keyword">else</span>
+0015   mb = max(B);
+0016 <span class="keyword">end</span>
+0017 
+0018 <span class="keyword">if</span> ma==0 
+0019   C = [];
+0020 <span class="keyword">elseif</span> mb==0
+0021   C = A;
+0022 <span class="keyword">else</span> <span class="comment">% both non-empty</span>
+0023   <span class="comment">%bits = sparse(1, max(ma,mb));</span>
+0024   bits = zeros(1, max(ma,mb));
+0025   bits(A) = 1;
+0026   bits(B) = 0;
+0027   C = A(logical(bits(A)));
+0028 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

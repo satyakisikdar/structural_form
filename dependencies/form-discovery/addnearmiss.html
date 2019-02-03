@@ -1,0 +1,62 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of addnearmiss</title>
+  <meta name="keywords" content="addnearmiss">
+  <meta name="description" content="Add GRAPH to NEARMGRAPHS -- the list of &quot;near miss graphs&quot;">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>addnearmiss
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>Add GRAPH to NEARMGRAPHS -- the list of &quot;near miss graphs&quot;</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [nearmscores nearmgraphs] = addnearmiss(nearmscores, nearmgraphs,graph, score, currgraph, currscore, epsilon) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> Add GRAPH to NEARMGRAPHS -- the list of &quot;near miss graphs&quot;</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+</ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="collapsedims.html" class="code" title="function [graph currscore overallchange nearmscores nearmgraphs] =collapsedims(graph, data, ps, epsilon, currscore,overallchange, loopmax, nearmscores, nearmgraphs, varargin);">collapsedims</a>	take graph with multiple components and squeeze out dimensions wherever</li><li><a href="spr.html" class="code" title="function [graph currscore overallchange nearmscores nearmgraphs] =spr(graph, data, ps, i, epsilon, currscore, overallchange, debug,nearmscores, nearmgraphs)">spr</a>	"Sub-tree pruning and regrafting": try changing a tree structured graph</li><li><a href="swapobjclust.html" class="code" title="function [graph currscore overallchange nearmscores nearmgraphs] =swapobjclust(graph, data, ps, comp, epsilon, currscore,overallchange, loopmax, nearmscores, nearmgraphs, varargin);">swapobjclust</a>	Try improving GRAPH by swapping clusters or individual objects</li></ul>
+<!-- crossreference -->
+
+
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [nearmscores nearmgraphs] = addnearmiss(nearmscores, nearmgraphs,</a><span class="keyword">...</span>
+0002                   graph, score, currgraph, currscore, epsilon)
+0003 
+0004 <span class="comment">% Add GRAPH to NEARMGRAPHS -- the list of &quot;near miss graphs&quot;</span>
+0005 
+0006 <span class="keyword">if</span> norm(currscore - score) &lt; epsilon
+0007   <span class="keyword">return</span>;
+0008 <span class="keyword">end</span>
+0009 
+0010 lsize = length(nearmscores); newind = 1:lsize;
+0011 lower = find(nearmscores &lt; score); l = lower(1);
+0012 newind = setdiff(1:lsize,l);
+0013 nearmscores(newind) = nearmscores(1:end-1);
+0014 nearmgraphs(newind) = nearmgraphs(1:end-1);
+0015 nearmscores(l) = score; nearmgraphs{l} = graph;
+0016</pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>

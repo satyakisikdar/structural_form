@@ -1,0 +1,267 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Description of gibbs_clean</title>
+  <meta name="keywords" content="gibbs_clean">
+  <meta name="description" content="SWAPTYPES: which swaps to include">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <meta name="generator" content="m2html &copy; 2005 Guillaume Flandin">
+  <meta name="robots" content="index, follow">
+  <link type="text/css" rel="stylesheet" href="../m2html.css">
+  <script type="text/javascript">
+    if (top.frames.length == 0) { top.location = "../index.html"; };
+  </script>
+</head>
+<body>
+<a name="_top"></a>
+<!-- menu.html form-discovery -->
+<h1>gibbs_clean
+</h1>
+
+<h2><a name="_name"></a>PURPOSE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>SWAPTYPES: which swaps to include</strong></div>
+
+<h2><a name="_synopsis"></a>SYNOPSIS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="box"><strong>function [ll graph] = gibbs_clean(graph, data, ps, varargin) </strong></div>
+
+<h2><a name="_description"></a>DESCRIPTION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre class="comment"> SWAPTYPES: which swaps to include
+ 1. individual objects
+ 2. cluster nodes
+ 3. subtreeprune (objects and cluster nodes)
+ 4. at level of entire graph
+ 5. remove dimensions</pre></div>
+
+<!-- crossreference -->
+<h2><a name="_cross"></a>CROSS-REFERENCE INFORMATION <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+This function calls:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="collapsedims.html" class="code" title="function [graph currscore overallchange nearmscores nearmgraphs] =collapsedims(graph, data, ps, epsilon, currscore,overallchange, loopmax, nearmscores, nearmgraphs, varargin);">collapsedims</a>	take graph with multiple components and squeeze out dimensions wherever</li><li><a href="draw_dot.html" class="code" title="function [xret, yret, labels] = draw_dot(adj, labels, varargin);">draw_dot</a>	</li><li><a href="graph_like.html" class="code" title="function [logI graph] = graph_like(data, graph, ps)">graph_like</a>	graph_like(data, adj, beta, sigma): compute log p(DATA|GRAPH)</li><li><a href="graph_prior.html" class="code" title="function gp = graph_prior(graph, ps)">graph_prior</a>	Compute prior on graph GRAPH.</li><li><a href="graphsig.html" class="code" title="function sig = graphsig(adj, objcnt, varargin)">graphsig</a>	call nauty to compute signature for an adjacency matrix</li><li><a href="simplify_graph.html" class="code" title="function graph = simplify_graph(graph, ps)">simplify_graph</a>	Try cleaning up GRAPH by removing unnecessary cluster nodes.</li><li><a href="spr.html" class="code" title="function [graph currscore overallchange nearmscores nearmgraphs] =spr(graph, data, ps, i, epsilon, currscore, overallchange, debug,nearmscores, nearmgraphs)">spr</a>	"Sub-tree pruning and regrafting": try changing a tree structured graph</li><li><a href="swapobjclust.html" class="code" title="function [graph currscore overallchange nearmscores nearmgraphs] =swapobjclust(graph, data, ps, comp, epsilon, currscore,overallchange, loopmax, nearmscores, nearmgraphs, varargin);">swapobjclust</a>	Try improving GRAPH by swapping clusters or individual objects</li></ul>
+This function is called by:
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="structurefit.html" class="code" title="function [ll, graph, bestgraphlls, bestgraph] =structurefit(data, ps, graph, savefile)">structurefit</a>	Fit a given structure to matrix DATA using parameters PS</li></ul>
+<!-- crossreference -->
+
+<h2><a name="_subfunctions"></a>SUBFUNCTIONS <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<ul style="list-style-image:url(../matlabicon.gif)">
+<li><a href="#_sub1" class="code">function [optg optscores] = nearmissopts(nearmgraphs, nearmscores, graph,</a></li></ul>
+
+<h2><a name="_source"></a>SOURCE CODE <a href="#_top"><img alt="^" border="0" src="../up.png"></a></h2>
+<div class="fragment"><pre>0001 <a name="_sub0" href="#_subfunctions" class="code">function [ll graph] = gibbs_clean(graph, data, ps, varargin)</a>
+0002 
+0003 <span class="comment">% SWAPTYPES: which swaps to include</span>
+0004 <span class="comment">% 1. individual objects</span>
+0005 <span class="comment">% 2. cluster nodes</span>
+0006 <span class="comment">% 3. subtreeprune (objects and cluster nodes)</span>
+0007 <span class="comment">% 4. at level of entire graph</span>
+0008 <span class="comment">% 5. remove dimensions</span>
+0009 
+0010 swaptypes = [1, 1, 1, 1, 1];
+0011 origgraph = graph;
+0012 args = varargin;
+0013 loopmax = 1;
+0014 debug = 0;
+0015 epsilon = 1e-4;
+0016 loopeps = epsilon;
+0017 optlens = 1;     <span class="comment">% optimize branch lengths, and use Hessian based score</span>
+0018 fastflag = 0;    <span class="comment">% nearby swaps only</span>
+0019 
+0020 nearmisses = 0;
+0021 nearmissesk = 4; <span class="comment">% store four times as many as needed.</span>
+0022 
+0023 <span class="keyword">for</span> i=1:2:length(args)
+0024   <span class="keyword">switch</span> args{i}
+0025    <span class="keyword">case</span> <span class="string">'loopmax'</span>,         loopmax = args{i+1};
+0026    <span class="keyword">case</span> <span class="string">'debug'</span>,             debug = args{i+1};
+0027    <span class="keyword">case</span> <span class="string">'nearmisses'</span>,   nearmisses = args{i+1};
+0028    <span class="keyword">case</span> <span class="string">'loopeps'</span>,         loopeps = args{i+1};
+0029    <span class="keyword">case</span> <span class="string">'optlens'</span>,       optlens = args{i+1};
+0030    <span class="keyword">case</span> <span class="string">'swaptypes'</span>,     swaptypes = args{i+1};
+0031    <span class="keyword">case</span> <span class="string">'fast'</span>,          fastflag = args{i+1};
+0032   <span class="keyword">end</span>
+0033 <span class="keyword">end</span>
+0034 nearmisses = nearmisses*nearmissesk;
+0035 optlens = ps.speed &lt; 5;
+0036 
+0037 <span class="comment">% gold standards: don't accept changes that make these worse!</span>
+0038 llgold = -inf;
+0039 graphgold = graph;
+0040 
+0041 <span class="comment">% XXX: we assume that simplifying graph won't make score worse -- but check this</span>
+0042 orig_graph = graph; graph = <a href="simplify_graph.html" class="code" title="function graph = simplify_graph(graph, ps)">simplify_graph</a>(graph, ps);
+0043 overallchange = 1;
+0044 loopoverall = 0;
+0045 
+0046 nearmscores = -inf*ones(1, nearmisses);
+0047 nearmgraphs = cell(1, nearmisses);
+0048 
+0049 <span class="keyword">while</span> overallchange == 1 &amp;&amp; loopoverall &lt; loopmax
+0050   overallchange = 0;
+0051   loopoverall = loopoverall+1;
+0052   disp(sprintf(<span class="string">'gibbs_clean: iteration %g'</span>, loopoverall));
+0053 
+0054   <span class="comment">% run branch length optimization</span>
+0055   <span class="keyword">if</span> optlens 
+0056     ps.fast = 0; 
+0057     [ll graph] = <a href="graph_like.html" class="code" title="function [logI graph] = graph_like(data, graph, ps)">graph_like</a>(data, graph, ps);
+0058     ll = ll + <a href="graph_prior.html" class="code" title="function gp = graph_prior(graph, ps)">graph_prior</a>(graph, ps);
+0059     <span class="keyword">if</span> ps.gibbsclean == 0 <span class="keyword">break</span>; <span class="keyword">end</span>
+0060     origll = ll;
+0061     <span class="keyword">if</span> ll &gt; llgold
+0062       llgold = ll; graphgold = graph;
+0063     <span class="keyword">else</span>
+0064       disp(<span class="string">'gibbs_clean: graph is getting worse'</span>);
+0065       graph = graphgold; ll = llgold;
+0066       <span class="keyword">break</span>;
+0067     <span class="keyword">end</span>
+0068   <span class="keyword">end</span>
+0069   <span class="keyword">if</span> ps.speed &gt; 1 ps.fast = 1; <span class="keyword">end</span>
+0070 
+0071   <span class="comment">% use approximate scores throughout</span>
+0072   [testl, ng]=<a href="graph_like.html" class="code" title="function [logI graph] = graph_like(data, graph, ps)">graph_like</a>(data, graph, ps);
+0073   currscore= testl + <a href="graph_prior.html" class="code" title="function gp = graph_prior(graph, ps)">graph_prior</a>(graph, ps);
+0074 
+0075   <span class="keyword">for</span> i=1:graph.ncomp
+0076     <span class="comment">% cluster swaps</span>
+0077     <span class="keyword">if</span> swaptypes(2) &amp;&amp; graph.components{i}.nodecount &gt; 1 
+0078       [graph currscore overallchange nearmscores nearmgraphs]= <span class="keyword">...</span>
+0079           <a href="swapobjclust.html" class="code" title="function [graph currscore overallchange nearmscores nearmgraphs] =swapobjclust(graph, data, ps, comp, epsilon, currscore,overallchange, loopmax, nearmscores, nearmgraphs, varargin);">swapobjclust</a>(graph, data, ps, i, epsilon, currscore, <span class="keyword">...</span>
+0080                overallchange, loopmax, nearmscores, nearmgraphs,<span class="keyword">...</span>
+0081              <span class="string">'fastflag'</span>, fastflag); 
+0082       <span class="comment">% finish if we've improved</span>
+0083       <span class="keyword">if</span> ~optlens &amp;&amp; overallchange &amp;&amp; ~fastflag  ll = currscore; <span class="keyword">return</span>; <span class="keyword">end</span>
+0084     <span class="keyword">end</span>
+0085 
+0086     <span class="comment">% subtree pruning and regrafting</span>
+0087     <span class="keyword">if</span> swaptypes(3) &amp;&amp; graph.components{i}.nodecount &gt; 1 &amp;&amp; ~fastflag
+0088       <span class="keyword">switch</span> graph.components{i}.type
+0089         <span class="keyword">case</span>{<span class="string">'tree'</span>, <span class="string">'hierarchy'</span>, <span class="string">'dirhierarchy'</span>, <span class="string">'domtree'</span>, <span class="keyword">...</span>
+0090          <span class="string">'dirhierarchynoself'</span>, <span class="string">'undirhierarchy'</span>, <span class="string">'undirhierarchynoself'</span>,<span class="keyword">...</span>
+0091          <span class="string">'domtreenoself'</span>}
+0092       [graph currscore overallchange nearmscores nearmgraphs]= <span class="keyword">...</span>
+0093        <a href="spr.html" class="code" title="function [graph currscore overallchange nearmscores nearmgraphs] =spr(graph, data, ps, i, epsilon, currscore, overallchange, debug,nearmscores, nearmgraphs)">spr</a>(graph, data, ps, i, epsilon, currscore, overallchange, debug,<span class="keyword">...</span>
+0094         nearmscores, nearmgraphs); 
+0095     <span class="keyword">end</span>
+0096       <span class="comment">% finish if we've improved</span>
+0097       <span class="keyword">if</span> ~optlens &amp;&amp; overallchange &amp;&amp; ~fastflag ll = currscore; <span class="keyword">return</span>; <span class="keyword">end</span>
+0098     <span class="keyword">end</span>
+0099   <span class="keyword">end</span>
+0100 
+0101   <span class="keyword">if</span> graph.ncomp &gt; 1 &amp;&amp; sum(graph.compsizes &gt; 1) &gt; 1
+0102     <span class="keyword">if</span> swaptypes(5)
+0103       <span class="comment">% try removing some dimensions</span>
+0104       [graph currscore overallchange nearmscores nearmgraphs]= <span class="keyword">...</span>
+0105           <a href="collapsedims.html" class="code" title="function [graph currscore overallchange nearmscores nearmgraphs] =collapsedims(graph, data, ps, epsilon, currscore,overallchange, loopmax, nearmscores, nearmgraphs, varargin);">collapsedims</a>(graph, data, ps, epsilon, currscore, <span class="keyword">...</span>
+0106                overallchange, loopmax, nearmscores, nearmgraphs);
+0107     <span class="keyword">end</span>
+0108 
+0109     <span class="keyword">if</span> swaptypes(4) 
+0110       <span class="comment">% cluster swaps at level of entire graph</span>
+0111       [graph currscore overallchange nearmscores nearmgraphs]= <span class="keyword">...</span>
+0112           <a href="swapobjclust.html" class="code" title="function [graph currscore overallchange nearmscores nearmgraphs] =swapobjclust(graph, data, ps, comp, epsilon, currscore,overallchange, loopmax, nearmscores, nearmgraphs, varargin);">swapobjclust</a>(graph, data, ps, [], epsilon, currscore, <span class="keyword">...</span>
+0113              overallchange, loopmax, nearmscores, nearmgraphs,<span class="keyword">...</span>
+0114              <span class="string">'fastflag'</span>, fastflag); 
+0115     <span class="keyword">end</span>
+0116   <span class="keyword">end</span>
+0117 
+0118   <span class="comment">% finish if we've improved</span>
+0119   <span class="keyword">if</span> ~optlens &amp;&amp; overallchange &amp;&amp; ~fastflag ll = currscore; <span class="keyword">return</span>; <span class="keyword">end</span>
+0120 
+0121   <span class="keyword">if</span> swaptypes(1)
+0122     <span class="comment">% object swaps -- will be slow for large graphs</span>
+0123     [graph currscore overallchange nearmscores nearmgraphs]= <span class="keyword">...</span>
+0124         <a href="swapobjclust.html" class="code" title="function [graph currscore overallchange nearmscores nearmgraphs] =swapobjclust(graph, data, ps, comp, epsilon, currscore,overallchange, loopmax, nearmscores, nearmgraphs, varargin);">swapobjclust</a>(graph, data, ps, [], epsilon, currscore,<span class="keyword">...</span>
+0125              overallchange, loopmax, nearmscores, nearmgraphs,<span class="keyword">...</span>
+0126              <span class="string">'objflag'</span>, 1, <span class="string">'fastflag'</span>, fastflag); 
+0127   <span class="keyword">end</span>
+0128 <span class="keyword">end</span>
+0129 
+0130 <span class="keyword">if</span> optlens 
+0131   <span class="keyword">if</span> loopoverall == loopmax <span class="comment">% we fell out of loop without optimizing</span>
+0132                 <span class="comment">% branch lengths</span>
+0133     ps.fast = 0;
+0134     [ll graph] = <a href="graph_like.html" class="code" title="function [logI graph] = graph_like(data, graph, ps)">graph_like</a>(data, graph, ps);
+0135     ll = ll + <a href="graph_prior.html" class="code" title="function gp = graph_prior(graph, ps)">graph_prior</a>(graph, ps);
+0136     disp(<span class="string">'overall: loop count exceeded'</span>);
+0137   <span class="keyword">end</span>
+0138 
+0139   <span class="keyword">if</span> nearmisses &gt; 0
+0140     [optg optscores] = <a href="#_sub1" class="code" title="subfunction [optg optscores] = nearmissopts(nearmgraphs, nearmscores, graph, ">nearmissopts</a>(nearmgraphs, nearmscores, graph, <span class="keyword">...</span>
+0141                       nearmisses, nearmissesk, ps, epsilon);
+0142   
+0143   <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0144     <span class="keyword">if</span> 0 <span class="comment">% show nearmisses</span>
+0145       <span class="comment">%for i = 1:length(optg)</span>
+0146       <span class="keyword">for</span> i = 1:8
+0147         <span class="comment">%subplot(ceil(sqrt(length(optg))),ceil(sqrt(length(optg))),i)</span>
+0148     clf;
+0149         ps.cleanstrong = 1;
+0150         <span class="comment">% sg = simplify_graph(optg{i}, ps);</span>
+0151         sg = optg{i};
+0152         <a href="draw_dot.html" class="code" title="function [xret, yret, labels] = draw_dot(adj, labels, varargin);">draw_dot</a>(sg.adj, ps.runps.names);
+0153         gsig{i} = <a href="graphsig.html" class="code" title="function sig = graphsig(adj, objcnt, varargin)">graphsig</a>(sg.adjsym, sg.objcount);
+0154         title(num2str(optscores(i)));
+0155         ps.cleanstrong = 0;
+0156     drawnow; 
+0157       <span class="keyword">end</span>
+0158     <span class="keyword">end</span>
+0159   <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0160   
+0161     ps.fast = 0; 
+0162     <span class="keyword">for</span> i = 1:length(optg)
+0163       disp(sprintf(<span class="string">'opt %g'</span>, i));
+0164       [llnm graphnm] = <a href="graph_like.html" class="code" title="function [logI graph] = graph_like(data, graph, ps)">graph_like</a>(data, optg{i}, ps);
+0165       llnm = llnm + <a href="graph_prior.html" class="code" title="function gp = graph_prior(graph, ps)">graph_prior</a>(graphnm, ps);
+0166       <span class="keyword">if</span> llnm - ll &gt; loopeps
+0167         disp(<span class="string">'found a good near-miss'</span>);
+0168         graph = graphnm; ll = llnm;  <span class="keyword">break</span>;
+0169       <span class="keyword">end</span>
+0170     <span class="keyword">end</span>
+0171   <span class="keyword">end</span>
+0172 <span class="keyword">else</span> <span class="comment">% don't need to worry about optimizing lengths and computing true score</span>
+0173   ll = currscore;
+0174 <span class="keyword">end</span>
+0175 
+0176 <span class="comment">%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%</span>
+0177 <span class="comment">% find  near misses to optimize</span>
+0178 <a name="_sub1" href="#_subfunctions" class="code">function [optg optscores] = nearmissopts(nearmgraphs, nearmscores, graph, </a><span class="keyword">...</span>
+0179                    nearmisses, nearmissesk, ps, epsilon);
+0180 nearmisses = nearmisses/nearmissesk;
+0181 sigs = [];
+0182 ps.cleanstrong = 1;
+0183 i = 0; j = 0;
+0184 optg = {}; optscores = [];
+0185 <span class="comment">% so that we don't optimize the current best graph again</span>
+0186 nearmgraphs = cat(2, graph, nearmgraphs{:}); nearmscores = [0, nearmscores];
+0187 <span class="keyword">while</span> i &lt; nearmisses &amp; j &lt;= nearmisses*nearmissesk
+0188   j = j+1; 
+0189   <span class="keyword">if</span> j &gt; length(nearmgraphs)
+0190     <span class="keyword">break</span>
+0191   <span class="keyword">end</span>
+0192 
+0193   sg = nearmgraphs(j);
+0194   <span class="keyword">if</span> ps.nauty <span class="comment">% If nauty installed, make sure that the near misses checked</span>
+0195           <span class="comment">%        are all different up to isomorphism</span>
+0196     jsig = <a href="graphsig.html" class="code" title="function sig = graphsig(adj, objcnt, varargin)">graphsig</a>(sg.adjsym, sg.objcount);
+0197     <span class="keyword">if</span> length(jsig) &gt; size(sigs,2)
+0198       newsig = zeros(j, length(jsig)); 
+0199       newsig(1:j-1, 1:size(sigs,2)) = sigs; sigs = newsig;
+0200     <span class="keyword">end</span>
+0201     sigs(j, 1:length(jsig)) = transpose(jsig);
+0202     ds = (repmat(sigs(j,:),j-1, 1) - sigs(1:j-1,:));
+0203     <span class="comment">% never pick the first graph but that's OK</span>
+0204     <span class="keyword">if</span> j &gt; 1 &amp;&amp; min(sum(abs(ds),2)) &gt; 0 &amp;&amp; <span class="keyword">...</span>
+0205        min(abs(nearmscores(j) - nearmscores(1:j-1))) &gt; epsilon
+0206       i = i+1;
+0207       optg{i} = nearmgraphs(j);  optscores(i) = nearmscores(j);
+0208     <span class="keyword">end</span>
+0209   <span class="keyword">else</span> <span class="comment">% consider the best NEARMISSES graphs in NEARMGRAPHS, even if some</span>
+0210        <span class="comment">%   are the same up to isomorphism</span>
+0211     i = i+1;
+0212     optg{i} = nearmgraphs(j);  optscores(i) = nearmscores(j);
+0213   <span class="keyword">end</span>
+0214 <span class="keyword">end</span></pre></div>
+<hr><address>Generated on Sun 03-Feb-2019 00:32:15 by <strong><a href="http://www.artefact.tk/software/matlab/m2html/" target="_parent">m2html</a></strong> &copy; 2005</address>
+</body>
+</html>
