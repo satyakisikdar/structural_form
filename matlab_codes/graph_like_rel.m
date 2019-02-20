@@ -160,4 +160,3 @@ if isinf(logI) || isnan(logI)
  keyboard
 end
 graph = origgraph;
-

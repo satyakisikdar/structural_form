@@ -16,8 +16,8 @@ if compind < 0
 else
   cgraph	= graph.components{compind};
   partmembers	= find(cgraph.z==c); 
-  [e_graph c1 c2] = split_node(graph, compind, c, pind, ...
-			     partmembers(1), partmembers(2:end), ps);
+  [e_graph, c1, c2] = split_node(graph, compind, c, pind, ...
+			     partmembers(1), partmembers(2:end), ps); % splitting at beginning?
 end
 
 if c1 == -inf % if we can't apply the current production
@@ -25,6 +25,7 @@ if c1 == -inf % if we can't apply the current production
 end
 e_graph = empty_graph(e_graph, compind, c1, c2);
 
+% for each "seedpair" see if you can split there?
 for i=1:size(seedpairs, 1)
   disp(i)
   g = e_graph;
@@ -41,7 +42,7 @@ for i=1:size(seedpairs, 1)
     d(membout, :)= inf;
   end
 
-  [l g] = graph_like(d, g, ps);
+  [l, g] = graph_like(d, g, ps);
   l = l + graph_prior(g, ps);
 
   % go through the remaining cluster members, greedily choosing which child
@@ -61,13 +62,13 @@ for i=1:size(seedpairs, 1)
       d(membout, :)= inf;
     end
 
-    [g1l g1new] = graph_like(d, g1, ps);
+    [g1l, g1new] = graph_like(d, g1, ps);
     g1l = g1l + graph_prior(g1, ps);
 
-    [g2l g2new] = graph_like(d, g2, ps);
+    [g2l, g2new] = graph_like(d, g2, ps);
     g2l = g2l + graph_prior(g2, ps);
 
-    [l choice] = max([g1l, g2l]);
+    [l, choice] = max([g1l, g2l]);
     if (choice == 1) 
       g = g1new; 
     else

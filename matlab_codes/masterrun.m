@@ -43,11 +43,11 @@ ps.data	      = {'demo_chain_feat', 'demo_ring_feat',...
                  'synthtree', 'synthgrid', 'animals',...
                  'judges', 'colors', 'faces', 'cities',...
                  'mangabeys','bushcabinet', 'kularing',...
-                 'prisoners'};
+                 'prisoners'}; % temporarily replace prisoners with test_data
 
-thisstruct = [2,4];	% chain and ring
+thisstruct = [1];	% chain and ring, 2,4
 % Datasets for this run. Indices correspond to dataset names in  setpsexport() 
-thisdata = [1:1];  % demo chain feat
+thisdata = [20];  % demo chain feat
 
 % to run some additional structure/data pairs list them here.
 extraspairs = [];
@@ -81,6 +81,11 @@ for rind = 1:repeats  % rind = repeat index
     disp(['  ', ps.data{dind}, ' ', ps.structures{sind}]);
     rand('state', rind);  % seed for the random number generator
     [mtmp, stmp,  ntmp, ltmp, gtmp] = runmodel(ps, sind, dind, rind);
+    % mtmp: log likelihood of the best structure found
+    % stmp: best structure found
+    % ntmp: ? same length as stmp.z
+    % ltmp: log probabilities of the structures found along the way
+    % gtmp: structures explored along the way
     succ = 0;
     while (succ == 0)
       try
@@ -103,4 +108,12 @@ for rind = 1:repeats  % rind = repeat index
     end
   end
 end
+
+% resultsdemo.mat: contains
+%   indexed by structure_index, data_index, repeat_index
+%   - modellike (stucture_index x data_index) contains log likelihood
+%   - structure (structure_index x data_index) contains structure found
+%   - llhistory (structure_index x data_index) contains 15x cell array
+%     where only the last row is filled...why?
+%   - names (structue_index, data_index) contains cell array of cluster names
 

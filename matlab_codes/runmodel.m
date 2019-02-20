@@ -26,8 +26,8 @@ savefile = 'growthhistory';
 
 names=[]; 
 % load data, names
-load(ps.dlocs{dind});
-names
+load(ps.dlocs{dind})
+ps.dlocs{dind}
 [nobjects, ps]= setrunps(data, dind, ps);
 
 [data, ps]=scaledata(data,ps);
