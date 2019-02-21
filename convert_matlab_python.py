@@ -12,7 +12,7 @@ def graph_to_matlab(graph, directory='./matlab_codes/data', data_type='relbin'):
         @param data_type: specify type of data to be read in by K&T (default relbin)
     '''
     adj_matrix = nx.to_numpy_matrix(graph)
-    struct = {'data': {'R': adj_matrix, 'type': data_type, 'nobj': adj_matrix.shape[0]}}
+    struct = {'data': {'R': adj_matrix, 'type': data_type, 'nobj': float(adj_matrix.shape[0])}}
     savemat('{}/{}.mat'.format(directory, graph.name), struct)
 
 
@@ -47,9 +47,7 @@ def import_results(dataset, form, directory='./matlab_codes/results', repeat=1):
     
 
 if __name__ == '__main__':
-    g = matlab_to_graph('prisoners', './matlab_codes/data')
-
-    g.name = 'prisoners2'
+    g = nx.DiGraph()
+    g.add_edges_from([(1, 2), (1, 3), (2, 3), (4, 5), (4, 6), (5, 6), (7, 8), (7, 9), (8, 9), (10, 11), (10, 12), (11, 12), (3, 5), (6, 8), (9, 11)])
+    g.name = 'prisoners'
     graph_to_matlab(g, './matlab_codes/data')
-
-    print(import_results('prisoners', 'chain'))
