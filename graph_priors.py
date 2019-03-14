@@ -23,7 +23,7 @@ def sum_logs(x):
     xp = np.exp(x - mx)
     return np.log(np.sum(xp)) + mx
 
-def struct_counts(params, num_objects):
+def set_log_priors(params, num_objects):
     max_n = num_objects
     theta = params.theta  # 1 - np.exp(-3)
     s2_mat = stirling2(max_n, max_n)
@@ -74,7 +74,42 @@ def struct_counts(params, num_objects):
     log_weights = np.log(theta) + np.arange(1, max_n+1) * np.log(1 - theta)
 
 
-    tot_sums = np.array([sum_logs(log_weights + log_counts[i, :]) for i in range(8)])
+    tot_sums = np.array([[sum_logs(log_weights + log_counts[i, :]) for i in range(8)]])
 
     params.log_priors = np.tile(log_weights, (8, 1)) - np.tile(np.transpose(tot_sums), (1, max_n))
-    return params
+
+
+def graph_prior(cluster_graph, params):
+    '''
+    computes log P(cluster_graph)
+    :param cluster_graph:
+    :param params:
+    :return:
+    '''
+    num_cluster_nodes = cluster_graph.order()
+
+    struct_name = params.struct_name
+
+    if struct_name in ('partition', 'connected', 'partitionnoself', 'connectednoself'):
+        idx = 1
+    elif struct_name in ('chain', 'undirchain', 'undirchainnoself'):
+        idx = 2
+    elif struct_name in ('ring', 'undirring', 'undirringnoself'):
+        idx = 3
+    elif struct_name in ('tree'):
+        idx = 4
+        num_cluster_nodes -= cluster_graph.number_empty_nodes  # deduct number of empty nodes
+    elif struct_name in ('hierarchy', 'undirhierarchy', 'undirhierarchynoself', 'undirdomtree', 'undirdomtreenoself'):
+        idx = 5
+    elif struct_name in ('domtree', 'dirhierarchy', 'dirhierarchynoself', 'dirdomtreenoself'):
+        idx = 6
+    elif struct_name in ('order', 'dirchain', 'dirchainnoself', 'ordernoself'):
+        idx = 7
+    elif struct_name in ('dirring', 'dirringnoself'):
+        idx = 8
+    elif struct_name in ('grid', 'cylinder'):
+        raise NotImplementedError('Grids and cylinders are not implemented yet')
+    else:
+        raise NotImplementedError(f'Invalid structure {struct_name}')
+
+    return params.log_priors[idx-1, num_cluster_nodes-1]  # idx-1 because MATLAB
