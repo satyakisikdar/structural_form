@@ -1,12 +1,13 @@
 '''
 MATLAB file: masterrun.m
 '''
-from parameters import DefaultParameters
+from parameters import Parameters
 
 def main():
     master_file = None  # masterfile    = 'resultsdemo.mat';
 
-    params = DefaultParameters()
+    params = Parameters()
+    params.set_default_parameters()
 
     ## ignore neato and other display functions for now
 

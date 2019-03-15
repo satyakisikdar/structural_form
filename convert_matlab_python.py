@@ -47,7 +47,8 @@ def import_results(dataset, form, directory='./matlab_codes/results', repeat=1):
     
 
 if __name__ == '__main__':
-    g = nx.DiGraph()
-    g.add_edges_from([(1, 2), (1, 3), (2, 3), (4, 5), (4, 6), (5, 6), (7, 8), (7, 9), (8, 9), (10, 11), (10, 12), (11, 12), (3, 5), (6, 8), (9, 11)])
+    g = nx.Graph()
+    # g.add_edges_from([(1, 2), (1, 3), (2, 3), (4, 5), (4, 6), (5, 6), (7, 8), (7, 9), (8, 9), (10, 11), (10, 12), (11, 12), (3, 5), (6, 8), (9, 11)])
+    g.add_edges_from([(1, 2), (1, 3), (2, 3), (4, 5), (4, 6), (5, 6), (3, 5)])
     g.name = 'prisoners'
     graph_to_matlab(g, './matlab_codes/data')

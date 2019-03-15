@@ -7,6 +7,7 @@ import os
 import glob
 
 import utilities
+from graph_priors import set_log_priors
 
 DATA_LOCATION = './matlab_codes/data/'
 
@@ -16,10 +17,10 @@ class Parameters:
             self.structures = list(structure.strip() for structure in struct_file)
             self.datasets = list(dataset.strip() for dataset in data_file)
 
-        self.repeats = np.ones(len(self.datasets))
+        # self.repeats = np.ones(len(self.datasets))
         self.data_locations = {dataset: f'{DATA_LOCATION}{dataset}.mat' for dataset in self.datasets}
-        self.similarity_dimensions = {dataset: 1000 for dataset in self.datasets}
-
+        # self.similarity_dimensions = {dataset: 1000 for dataset in self.datasets}
+        self.set_default_parameters()
 
     def set_default_parameters(self):
         '''
@@ -66,15 +67,17 @@ class Parameters:
         # self.relational_init_directory = ''  # use if relational_outside_init is not None
 
 
-    def set_runtime_parameters(self, dataset_name):
-        data_dictionary = utilities.load_from_mat(self.data_locations[dataset_name])
-        data = data_dictionary['data']
-
+    def set_runtime_parameters(self, data_graph, struct_name):
+        '''
+        sets runtime params including log_priors
+        :param data_graph:
+        :return:
+        '''
         self.missing_data = False
-
+        self.struct_name = struct_name
         # data is always relational
         self.run_type = 'relational'
-        self.num_objects = data['nobj']
+        self.num_objects = data_graph.order()
         self.speed = 5
 
-        self.log_priors = np.zeros((8, self.num_objects)) # log priors of structures - values are computed in struct_counts
+        set_log_priors(self, num_objects=self.num_objects) # log priors of structures - values are computed in struct_counts

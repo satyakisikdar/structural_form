@@ -1,17 +1,19 @@
 import networkx as nx
-from typing import List, Tuple, Set
+from typing import List, Tuple, Set, Any
 from copy import deepcopy
+from itertools import permutations, combinations
 
 from graph_likelihoods import graph_likelihood
 from graph_priors import graph_prior
 from parameters import Parameters
+
 
 class ClusterGraph(nx.DiGraph):
     '''
     Structure for Cluster Graph
     Analogous to Graph in MATLAB
     '''
-    def __init__(self, struct_type: str, dataset: str, data_graph: nx.DiGraph, sigma=None, new_obj=True) -> None:
+    def __init__(self, struct_type: str, dataset: str, data_graph: nx.DiGraph, sigma=None) -> None:
         nx.DiGraph.__init__(self)
         self.data_graph = data_graph
         self.struct_type = struct_type
@@ -44,6 +46,7 @@ class ClusterGraph(nx.DiGraph):
             self.num_objects += 1
 
     def remove_node(self, n):
+        # assert self.has_node(n)
         self.num_objects -= 1
         for member in self.node[n]['members']:
             del self.cluster_labels[member]
@@ -63,49 +66,37 @@ class ClusterGraph(nx.DiGraph):
                 self.cluster_labels[member] = cnode
 
     def add_cluster_member(self, cnode: int, member: int) -> None:
-        assert cnode in self.nodes()
+        assert self.has_node(cnode)
         self.node[cnode]['members'].add(member)
         self.cluster_labels[member] = self.cluster_labels[cnode]
         # self.update_clustering([cnode])
 
-    def split_score(self, child_1: int, child_2: int) -> float:
-        '''
-        calculates the log probability of the split of nodes child_1 and child_2
-        :return: the log probability of the split
-        '''
-        pass
 
-    def get_seed_pairs(self, node: int) -> List[Tuple[int, int]]:
-        return [(1, 2), (2, 1), (3, 1), (4, 1), (5, 1), (6, 1), (7, 1), (8, 1),
-            (9, 1), (10, 1), (11, 1), (12, 1)]
-
-    def make_copy(self):
-        copy = ClusterGraph(struct_type=self.struct_type, dataset=self.dataset, data_graph=self.data_graph, new_obj=False)
-        for node, data in self.nodes(data=True):
-            # print(data)
-            copy.add_node(node, members=data['members'])
-
-        for u, v in self.edges():
-            copy.add_edge(u, v)
-
-        copy.cluster_labels = self.cluster_labels
-        copy.update_clustering()
-        return copy
+    def get_seed_pairs(self, cnode: int) -> List[Tuple[Any, ...]]:
+        assert self.has_node(cnode)
+        members = self.node[cnode]['members']
+        # if undirected, (a, b) and (b, a) are the same
+        if self.is_directed():
+            seed_pairs = list(permutations(members, 2))
+        else:
+            seed_pairs = list(combinations(members, 2))
+        return seed_pairs
 
 
-    def get_split(self, parent_node: int, params: Parameters) -> Tuple[Set[int], Set[int]]:
+    def get_best_split(self, parent_node: int, params: Parameters) -> Tuple[Any, float, Set[int], Set[int]]:
         '''
         splits members of parent node into two sets
         :param members:
-        :return: set_1, set_2
+        :return: max_likelihood, set_1, set_2
         '''
+        assert self.has_node(parent_node)
 
         members = self.node[parent_node]['members']
         print(f'Splitting cluster node {parent_node} ({members})')
 
-        # seed_pairs = self.get_seed_pairs(parent_node)
-        seed_pairs = [(1, 2), (3, 1), (2, 1)]#, (1, 3), (4, 1)]
-
+        seed_pairs = self.get_seed_pairs(parent_node)
+        # seed_pairs = [(1, 2), (3, 1), (2, 1)]#, (1, 3), (4, 1)]
+        # seed_pairs = [(6, 1)]
         cluster_graphs_likelihoods_and_partitions = []  # list of 3-tuples - (cluster_graph, likelihood, parts)
 
 
@@ -117,17 +108,20 @@ class ClusterGraph(nx.DiGraph):
             # cluster_graph_copy = self.make_copy()
             cluster_graph_copy = deepcopy(self)
             data_graph = deepcopy(self.data_graph)
-            cluster_graph_copy.remove_node(parent_node)
+            # cluster_graph_copy.remove_node(parent_node)
+
+            ## replace this with a call to node_split
+            # cluster_graph_copy.add_node(seed_1, members={seed_1})
+            # cluster_graph_copy.add_node(seed_2, members={seed_2})
+            cluster_graph_copy.split_node(parent_node, seeds=(seed_1, seed_2))
 
             part_1 = {seed_1}
             part_2 = {seed_2}
 
-            cluster_graph_copy.add_node(seed_1, members={seed_1})
-            cluster_graph_copy.add_node(seed_2, members={seed_2})
 
             # check if the seeds have edges between them in the data graph - both directions
-            if data_graph.has_edge(seed_1, seed_2):
-                cluster_graph_copy.add_edge(seed_1, seed_2)
+            # if data_graph.has_edge(seed_1, seed_2):
+            #     cluster_graph_copy.add_edge(seed_1, seed_2)
             # if self.data_graph.has_edge(seed_2, seed_1):
             #     cluster_graph_copy.add_edge(seed_2, seed_1)
 
@@ -137,7 +131,7 @@ class ClusterGraph(nx.DiGraph):
                                                               cluster_graph=cluster_graph_copy,
                                                               params=params)
             likelihood += graph_prior(cluster_graph_copy, params)  # this matches with the matlab scores
-            print('likelihood', likelihood)
+            # print('likelihood', likelihood)
 
             # set of member nodes
             members = members - {seed_1, seed_2}  # remove seeds from consideration
@@ -173,41 +167,40 @@ class ClusterGraph(nx.DiGraph):
                     max_likelihood = cluster_graph_2_likelihood
 
             # at this point, we have the best cluster_graph and the corresponding max log-likelihood for each seed-pair
-            print(f'seeds: {seed_1, seed_2}, parts: {part_1}, {part_2}, likelihood: {max_likelihood}')
+            print(f'seeds: {seed_1, seed_2}, parts: {part_1}, {part_2}, likelihood: {round(max_likelihood, 3)}\n')
             cluster_graphs_likelihoods_and_partitions.append((cluster_graph_copy, max_likelihood, (part_1, part_2)))
 
         # we have multiple cluster_graphs and likelihoods
 
         # TODO: figure out simplify_graph in descending order of log_likelihood
 
-        best_part_1, best_part_2 = max(cluster_graphs_likelihoods_and_partitions, key=lambda x: x[1])[-1]
-        print(f'best parts: {best_part_1, best_part_2}')
+        best_cluster_graph, best_likelihood, best_parts = max(cluster_graphs_likelihoods_and_partitions, key=lambda x: x[1])
+        best_part_1, best_part_2 = best_parts
+        print(f'best parts: {best_part_1, best_part_2}, likelihood: {best_likelihood}\n')
 
         assert len(best_part_1) > 0 and len(best_part_2) > 0, f'cannot split node {parent_node}'
-        return best_part_1, best_part_2
+        return best_cluster_graph, best_likelihood, best_part_1, best_part_2
 
-    def split_node(self, parent_node: int) -> None:
+    def split_node(self, parent_node: int, seeds: Tuple[int, int]) -> None:
         '''
         splits parent node into two children;
         :param parent_node:
         :param split_members:
         :return:
         '''
-        assert parent_node in self.nodes, f'node {parent_node} not in cluster graph'
-
-        members_1, members_2 = self.get_split(parent_node)
-
+        assert self.has_node(parent_node), f'node {parent_node} not in cluster graph'
         incoming_nodes = set(self.predecessors(parent_node))  # end-points of the incoming red edges to the parent node
         outgoing_nodes = set(self.successors(parent_node))  # end-points of outgoing red edges to the parent node
+        self.remove_node(parent_node)  # remove the parent node from the graph
 
         # adding the two new child nodes
-        child_1 = f'{parent_node}_1'
-        child_2 = f'{parent_node}_2'
-        self.add_node(child_1, members=members_1)
-        self.add_node(child_2, members=members_2)
-        self.update_clustering([child_1, child_2])
+        child_1, child_2 = seeds
 
-        if self.name == 'partition':
+        self.add_node(child_1, members={child_1})
+        self.add_node(child_2, members={child_2})
+
+
+        if self.struct_type == 'partition':
             for incoming_node in incoming_nodes:
                 self.add_edge(incoming_node, child_1)
                 self.add_edge(incoming_node, child_2)
@@ -216,7 +209,7 @@ class ClusterGraph(nx.DiGraph):
                 self.add_edge(child_1, outgoing_node)
                 self.add_edge(child_2, outgoing_node)
 
-        elif self.name == 'chain' or self.name == 'ring':  # chains and rings have the same production rule
+        elif self.struct_type == 'chain' or self.struct_type == 'ring':  # chains and rings have the same production rule
             for incoming_node in incoming_nodes:
                 self.add_edge(incoming_node, child_1)
 
@@ -225,7 +218,7 @@ class ClusterGraph(nx.DiGraph):
             for outgoing_node in outgoing_nodes:
                 self.add_edge(child_2, outgoing_node)
 
-        elif self.name == 'order':
+        elif self.struct_type == 'order':
             for incoming_node in incoming_nodes:
                 self.add_edge(incoming_node, child_1)
                 self.add_edge(incoming_node, child_2)
@@ -236,7 +229,7 @@ class ClusterGraph(nx.DiGraph):
                 self.add_edge(child_1, outgoing_node)
                 self.add_edge(child_2, outgoing_node)
 
-        elif self.name == 'hierarchy':
+        elif self.struct_type == 'hierarchy':
             for incoming_node in incoming_nodes:
                 self.add_edge(incoming_node, child_1)
 
@@ -245,8 +238,8 @@ class ClusterGraph(nx.DiGraph):
             for outgoing_node in outgoing_nodes:
                 self.add_edge(child_1, outgoing_node)
 
-        elif self.name == 'tree':
-            empty_node = f'empty_{parent_node.id}'
+        elif self.struct_type == 'tree':
+            empty_node = f'empty_{parent_node}'
             self.add_node(empty_node, members={})
             self.number_empty_nodes += 1
 
@@ -257,9 +250,8 @@ class ClusterGraph(nx.DiGraph):
             self.add_edge(empty_node, child_2)
 
         else:
-            raise NotImplementedError(f'Structure {self.name} not yet implemented')
+            raise NotImplementedError(f'Structure {self.struct_type} not yet implemented')
 
-        self.remove_node(parent_node)  # remove the parent node from the graph
 
 
 def main():
@@ -276,7 +268,7 @@ def main():
 
     params.set_runtime_parameters(data_graph=g, struct_name=cluster_graph.struct_type)
 
-    print(cluster_graph.get_split(0, params))
+    print(cluster_graph.get_best_split(0, params))
     # cluster_graph.add_edge('a', 'b')
     # print(cluster_graph.edges())
 

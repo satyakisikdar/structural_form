@@ -179,7 +179,7 @@ def graph_likelihood(data_graph, cluster_graph, params):
 
     current_objects, class_labels = zip(*cluster_graph.cluster_labels.items())
 
-    data_graph = data_graph.subgraph(current_objects)
+    # data_graph = data_graph.subgraph(current_objects)
 
     if cluster_graph.struct_type.startswith('undir'):
         cluster_graph.to_undirected()
