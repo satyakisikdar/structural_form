@@ -61,11 +61,11 @@ end
 
 disp(structname)
 
-ntot    = graph.components{compind}.nodecount;
+ntot    = graph.components{compind}.nodecount; % current # cluster nodes
 origadj = graph.components{compind}.adj;
 origW   = graph.components{compind}.W;
 % make markers for original edges
-origind = find(origadj);
+origind = find(origadj); % nonzero elements in adj list
 nold    = length(origind);
 origadj(origind)=1:nold;
 newinternal = [];
@@ -73,18 +73,18 @@ newinternal = [];
 switch structname
     case {'partition', 'chain', 'ring', 'hierarchy', 'domtreeflat', ...
 	  'connected', 'rootchain'}
-      newadj   = zeros(ntot+1);
-      minusnew       = setdiff(1:ntot+1, c+1);
-      newadj(minusnew, minusnew) = origadj;
+      newadj   = zeros(ntot+1); % because splitting, +1
+      minusnew = setdiff(1:ntot+1, c+1); % i *think* these are the clusters that aren't getting split
+      newadj(minusnew, minusnew) = origadj; % if above true, this sets the new adj list s.t. those entries arent changed
       % give the new node all the connections of the previous nodes
-      newadj(c+1,:)=newadj(c,:); 
+      newadj(c+1,:)=newadj(c,:); % TODO: why bidirectional?
       newadj(:,c+1)=newadj(:,c); 
 
       % c, c+1 are the new clusters
       c1 = c; c2 = c+1;
       newnodes = [c1 c2];
-      oldps=find(newadj(:,c)');
-      oldchild=find(newadj(c,:));
+      oldps=find(newadj(:,c)'); % find node c's incoming edges
+      oldchild=find(newadj(c,:)); % find node c's outgoing edges
       switch structname
         case {'partition'}
         case {'connected'}
@@ -147,18 +147,28 @@ if length(origind) > 0
   newW(isinf(newW))=median(origW(origind));
   newW(newind(sind(1:nold)))=origW(origind);
 else
-  newW(isinf(newW))=1;
+  newW(isinf(newW))=1; % TODO: whyyyy. only gets set to inf if they did it earlier, could just set to 1 there?
 end
 
 newadj(newadj>0)=1;
 
 % map(i) tells us what node i in old graph is now labelled 
 % imap(j) tells us what node j in new graph corresponds to
-map = zeros(1,size(newadj,1)); imap = map;
+
+% TODO: weirdness is happening here. At this point in origgraph.z, there
+% are labels 1 and 2. oldind gets set as [1, 3], and brandnew is 2. but
+% wasn't 2 already a cluster label and 3 wasn't? not sure how these labels
+% even work.
+% example: map = [1, 3, 0] and imap = [1, 1, 2]
+% so they want to split node 2, but how exactly does node 3 get set to 0?
+
+map = zeros(1,size(newadj,1));
+imap = map;
 brandnew = setdiff(newnodes, c);
-oldind = setdiff(1:size(newadj,1), brandnew);
+oldind = setdiff(1:size(newadj,1), brandnew); 
 map(1:length(oldind))=oldind;
-imap(oldind) = 1:length(oldind); imap(brandnew) = c;
+imap(oldind) = 1:length(oldind);
+imap(brandnew) = c;
 
 oldz = graph.components{compind}.z;
 newz = map(oldz);
