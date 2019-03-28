@@ -155,24 +155,22 @@ newadj(newadj>0)=1;
 % map(i) tells us what node i in old graph is now labelled 
 % imap(j) tells us what node j in new graph corresponds to
 
-% TODO: weirdness is happening here. At this point in origgraph.z, there
-% are labels 1 and 2. oldind gets set as [1, 3], and brandnew is 2. but
-% wasn't 2 already a cluster label and 3 wasn't? not sure how these labels
-% even work.
-% example: map = [1, 3, 0] and imap = [1, 1, 2]
-% so they want to split node 2, but how exactly does node 3 get set to 0?
-
 map = zeros(1,size(newadj,1));
 imap = map;
-brandnew = setdiff(newnodes, c);
-oldind = setdiff(1:size(newadj,1), brandnew); 
+brandnew = setdiff(newnodes, c); % new node (i.e. 1 -> 1 & 2, brandnew = 2)
+oldind = setdiff(1:size(newadj,1), brandnew); % indices of nodes currently in cluster graph
 map(1:length(oldind))=oldind;
 imap(oldind) = 1:length(oldind);
 imap(brandnew) = c;
 
-oldz = graph.components{compind}.z;
-newz = map(oldz);
+% newz: the value at element i at oldz is the index you use in map.
+% so if map = [1 3 0] and oldz = [2 1 2 ...] then newz = [3 1 3 ...]
+% imap works similarly
 
+oldz = graph.components{compind}.z;
+newz = map(oldz); % new cluster labels
+
+% TODO: what is illegal?
 newillegal= zeros(1,size(newadj,1));
 newillegal= map(graph.components{compind}.illegal);
 graph.components{compind}.illegal=[newillegal, newinternal];
@@ -190,8 +188,8 @@ graph.components{compind}.edgecountsym =...
       sum(sum(graph.components{compind}.adjsym))/2; 
 
 % new cluster nodes appear in order at the end of newnodes
-newz(part1) = newnodes(end-1);
-newz(part2) = newnodes(end);
+newz(part1) = newnodes(end-1); % put part1 children in one childnode
+newz(part2) = newnodes(end);   % put part2 children in other
 graph.components{compind}.z = newz;
 
 graph = combinegraphs(graph, ps, 'origgraph', origgraph, ...
