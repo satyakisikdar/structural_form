@@ -16,9 +16,9 @@ if isempty(graph)
   graph = makeemptygraph(ps);
 end
 
-[currprob graph]= optimizebranches(graph, data, ps);
+[currprob, graph]= optimizebranches(graph, data, ps);
 if ps.speed == 5
-  [currprob graph]= graphscorenoopt(graph, data, ps); 
+  [currprob, graph]= graphscorenoopt(graph, data, ps); 
 end
 
 stopflag=0;

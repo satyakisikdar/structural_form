@@ -25,10 +25,10 @@ for i=1:2:length(args)
 end
 
 for i=1:graph.ncomp
-  compsizes(i) = size(graph.components{i}.adj,1);
-  graph.components{i}.nodemap=(1:size(graph.components{i}.adj,1))';
-  graph.components{i}.edgemap=get_edgemap(graph.components{i}.adj);
-  graph.components{i}.edgemapsym=get_edgemap(graph.components{i}.adjsym, ...
+  compsizes(i) = size(graph.components{i}.adj,1);                               % num nodes in the cluster graph
+  graph.components{i}.nodemap=(1:size(graph.components{i}.adj,1))';             % list of cluster labels
+  graph.components{i}.edgemap=get_edgemap(graph.components{i}.adj);             % cluster graph adj list
+  graph.components{i}.edgemapsym=get_edgemap(graph.components{i}.adjsym, ...    % same as above but always symmetric
 				 'sym', 1 );
 end
 
@@ -38,6 +38,7 @@ adj = graph.components{1}.adj;
 z   = graph.components{1}.z;
 illegal = graph.components{1}.illegal;
 
+% ignore: always skipped for us
 for i = 2:graph.ncomp
   na     = size(W,1);
   Wb     = graph.components{i}.W; adjb = graph.components{i}.adj;  
@@ -71,20 +72,20 @@ for i = 2:graph.ncomp
   graph.components{i}.edgemapsym = ...
 			    kron(eye(na),graph.components{i}.edgemapsym);
   graph.components{i}.edgemapsym = graph.components{i}.edgemapsym(sind,sind);
-end
+end 
 
 graph.compinds= [];
 graph.globinds = zeros(compsizes);
 for i = 1:graph.ncomp
   % analysis: components of each node at highest level
-  graph.compinds(:,i) = graph.components{i}.nodemap;
+  graph.compinds(:,i) = graph.components{i}.nodemap;    % list of cluster labels
 end
 inds = subv2ind(compsizes, graph.compinds);
 % synthesis: map component nodes to combined node
-graph.globinds(inds) = 1:size(adj,1);
+graph.globinds(inds) = 1:size(adj,1); % not sure what the point of this is
 
 obsind = find(graph.z>=0);
-graph.z(obsind) = z(obsind);
+graph.z(obsind) = z(obsind); % copy over the cluster mappings for the data that's already assigned to a cluster
 graph.illegal = illegal;
 nobj = length(obsind);
 if ~zonly
@@ -117,12 +118,23 @@ if ~zonly && ~ps.prodtied  && graph.ncomp > 1 &&  ~isempty(origgraph)
 end
   
 fullW=zeros(size(W,1)+nobj);
+% z(obsind) = [1, 2, 2, 1, ...]
+% nobj + z(obsind) = [10, 11, 11, 10, ...] b/c clster nodes are at end of w
+% so this takes the part of fullW that assigns cluster labels to data and
+% stores those indices in leafinds
+% updated with leaflengths, which is created in
+% - reordermissing.m
+% - subtreeattach.m (doubles leaflengths)
+% - combineWs.m
+% - makeemptygraph.m (sets to 1's originally, the others change that val)
 leafinds = sub2ind(size(fullW), nobj+z(obsind), 1:nobj);
 fullW(leafinds)=graph.leaflengths(obsind);
 fullW(nobj+1:end, nobj+1:end)=graph.Wcluster;
-graph.W = fullW;
-graph.adj = fullW>0;
-graph.adjsym = (graph.adj | graph.adj'); 
+graph.W = fullW;        
+graph.adj = fullW>0;    % since we deal with bin rel data, same as W
+graph.adjsym = (graph.adj | graph.adj'); % make symmetric
+7
+% make W symmetric in a very verbose way
 graph.Wsym = fullW;
 Wtr = fullW';
 graph.Wsym(graph.adj') = Wtr(graph.adj');
