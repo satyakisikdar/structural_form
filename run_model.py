@@ -53,19 +53,20 @@ def choose_node_split(cnode: int, cluster_graph: ClusterGraph, params: Parameter
         part_1 = {cnode}
         part_2 = set()
     else:
-        log_likelihood, part_1, part_2 = cluster_graph.get_best_split(cnode, params)
+        _, log_likelihood, part_1, part_2 = cluster_graph.get_best_split(cnode, params)
 
     return log_likelihood, part_1, part_2
 
 
 def optimize_depth(cluster_graph: ClusterGraph, depth: int, log_likelihoods: float, new_cluster_graph: nx.DiGraph,
                    data_graph: nx.DiGraph, params: Parameters) -> None:
-    # optimize all splits at DEPTH TODO figure out
+    # since we iterate through cluster_graph.nodes we don't need a legal check
 
-    # for cnode in cluster_graph.nodes():
-    #     log_likelihoods, new_cluster_graph = optimize_branches(new_cluster_graph, data_graph, params)
-    # return log_likelihoods, new_cluster_graph
-    pass
+     for cnode in cluster_graph.nodes():
+         if new_cluster_graph.number_of_nodes() == 0:
+             continue
+         log_likelihoods, new_cluster_graph = optimize_branches(new_cluster_graph, data_graph, params)
+     return log_likelihoods, new_cluster_graph
 
 
 def structure_fit(data_graph: nx.DiGraph, params: Parameters, cluster_graph: ClusterGraph) -> Tuple[float, ClusterGraph, List[float],
@@ -78,7 +79,6 @@ def structure_fit(data_graph: nx.DiGraph, params: Parameters, cluster_graph: Clu
     best_graphs = []
 
     current_probab, cluster_graph = optimize_branches(cluster_graph, data_graph, params)
-    current_probab, cluster_graph = graph_score_no_opt(cluster_graph, data_graph, params)
 
     stop_flag = False
     depth = 0
@@ -141,9 +141,13 @@ def structure_fit(data_graph: nx.DiGraph, params: Parameters, cluster_graph: Clu
 
         if new_score - current_probab <= loop_eps:
             # optimize all splits at this depth
-            print('optimize all splits at current depth - NOT IMPLEMENTED yet')
-            # TODO log_likelihoods, new_cluster_graph = optimize_depth(cluster_graph, depth, log_likelihood, new_cluster_graph, params)
-            # TODO find max best split again, update new_score and new_cluster_graph if needed
+            print('optimize all splits at current depth')
+            try_log_likelihood, try_new_cluster_graph = optimize_depth(cluster_graph, depth, log_likelihood, new_cluster_graph, params)
+            tru_new_cluster_graph, try_log_likelihood, _, _ = try_new_cluster_graph.get_best_split(depth, params)
+
+            if try_log_likelihood > new_score:
+                new_score = log_likelihoods
+                new_cluster_graph = try_new_cluster_graph
 
         if new_score - current_probab <= loop_eps:
             stop_flag = True   # the score cannot be beaten
@@ -161,6 +165,18 @@ def structure_fit(data_graph: nx.DiGraph, params: Parameters, cluster_graph: Clu
 
             depth += 1
     return current_probab, cluster_graph, best_graph_log_likelihoods, best_graphs
+
+
+
+def simplify_graph(data_graph: nx.DiGraph, params: Parameters):
+    # remove:
+    # 1. dangling cluster nodes: any node that's not an object node but has 0-1 cluster neighbors, no
+    #    object neighbors
+    # 2. any cluster node with exactly two neighbors, one of which is a cluster node
+
+    # TODO: why cont = ones(1, 3)?
+    # TODO: need call to combine_graphs, redundant_inds
+    pass
 
 
 def branch_length_cases(data_graph: nx.DiGraph, params: Parameters, cluster_graph: ClusterGraph,
