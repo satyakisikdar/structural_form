@@ -14,7 +14,7 @@ from graph_likelihoods import graph_likelihood
 from Forms import ClusterGraph
 from parameters import Parameters
 
-#
+
 class Record:
     def __init__(self, cnode: int, log_likelihood: float, parts: Tuple[Set[int], Set[int]], cluster_graph: ClusterGraph) -> None:
         self.cnode = cnode
@@ -23,22 +23,13 @@ class Record:
         self.cluster_graph = cluster_graph
 
 
-def optimize_branches(cluster_graph: ClusterGraph, data_graph: nx.DiGraph, params: Parameters) -> Tuple[float, ClusterGraph]:
+def calculate_log_likelihood(cluster_graph: ClusterGraph, data_graph: nx.DiGraph, params: Parameters) -> Tuple[float, ClusterGraph]:
     '''
-    works!
     :param cluster_graph:
     :param data_graph:
     :param params:
     :return:
     '''
-    params.fast = False
-    log_likelihood, cluster_graph = graph_likelihood(data_graph, cluster_graph, params)
-    log_likelihood += graph_prior(cluster_graph, params)
-    return log_likelihood, cluster_graph
-
-
-def graph_score_no_opt(cluster_graph: ClusterGraph, data_graph: nx.DiGraph, params: Parameters) -> Tuple[float, ClusterGraph]:
-    params.fast = True
     log_likelihood, cluster_graph = graph_likelihood(data_graph, cluster_graph, params)
     log_likelihood += graph_prior(cluster_graph, params)
     return log_likelihood, cluster_graph
@@ -60,25 +51,22 @@ def choose_node_split(cnode: int, cluster_graph: ClusterGraph, params: Parameter
 
 def optimize_depth(cluster_graph: ClusterGraph, depth: int, log_likelihoods: float, new_cluster_graph: nx.DiGraph,
                    data_graph: nx.DiGraph, params: Parameters) -> None:
-    # since we iterate through cluster_graph.nodes we don't need a legal check
-
      for cnode in cluster_graph.nodes():
          if new_cluster_graph.number_of_nodes() == 0:
              continue
-         log_likelihoods, new_cluster_graph = optimize_branches(new_cluster_graph, data_graph, params)
+         log_likelihoods, new_cluster_graph = calculate_log_likelihood(new_cluster_graph, data_graph, params)
      return log_likelihoods, new_cluster_graph
 
 
 def structure_fit(data_graph: nx.DiGraph, params: Parameters, cluster_graph: ClusterGraph) -> Tuple[float, ClusterGraph, List[float],
                                                                                             List[nx.DiGraph]]:
-
     # TODO first split matches... likelihood numbers are off for the second iteration and on  - data_graph subgraph is turned off..
     loop_eps = 10 ** (-2)
 
     best_graph_log_likelihoods = []
     best_graphs = []
 
-    current_probab, cluster_graph = optimize_branches(cluster_graph, data_graph, params)
+    current_probab, cluster_graph = calculate_log_likelihood(cluster_graph, data_graph, params)
 
     stop_flag = False
     depth = 0
@@ -119,33 +107,27 @@ def structure_fit(data_graph: nx.DiGraph, params: Parameters, cluster_graph: Clu
         # new_score, new_cluster_graph = gibbs_clean()  # TODO for laters
         # new_score, new_cluster_graph = gibbs_clean()  # TODO for laters
 
-        if depth < 10:
+        if depth < 10 or new_score - current_probab <= loop_eps:
             print('small depth: optimizing branch lengths of best split')
-            new_log_l, ng = optimize_branches(new_cluster_graph, data_graph, params)
-            new_score, new_cluster_graph = graph_score_no_opt(ng, data_graph, params)
-
-        if new_score - current_probab <= loop_eps:  # optimize branch lengths as heuristic
-            print('optimizing branch lengths')
-
-            new_log_l, ng = optimize_branches(new_cluster_graph, data_graph, params)  # probably new_cluster_graph instead of cluster_graph_copy
-            new_score, new_cluster_graph = graph_score_no_opt(ng, data_graph, params)
-
-            if new_score - current_probab <= loop_eps and depth >= 10:
-                print('optimizing branch lengths of best split')
-                new_log_l, ng = optimize_branches(best_record_at_depth.cluster_graph, data_graph, params)
-                new_score, new_cluster_graph = graph_score_no_opt(ng, data_graph, params)
+            new_score, new_cluster_graph = calculate_log_likelihood(new_cluster_graph, data_graph, params)
 
         if new_score - current_probab <= loop_eps:
             print('do slow gibbs clean - NOT IMPLEMENTED yet')
             # TODO new_score, new_cluster_graph = gibbs_clean()
 
-        if new_score - current_probab <= loop_eps:
             # optimize all splits at this depth
             print('optimize all splits at current depth')
-            try_log_likelihood, try_new_cluster_graph = optimize_depth(cluster_graph, depth, log_likelihood, new_cluster_graph, params)
-            tru_new_cluster_graph, try_log_likelihood, _, _ = try_new_cluster_graph.get_best_split(depth, params)
+            new_score, new_cluster_graph = calculate_log_likelihood(new_cluster_graph, data_graph, params)
+            try_new_cluster_graph, try_log_likelihood, _, _ = try_new_cluster_graph.get_best_split(depth, params)
 
-            if try_log_likelihood > new_score:
+            # go through, see what's redundant and not. get rid of flags change
+            # then recompute
+            # brlencases. feel free to burn
+            # we don't touch any flags in the likelihood
+            # stretch goal: look at choose seedpairs, implemen=
+            # on thursday: go through simplify_graph.m
+
+            if try_log_likelihood > new_score: # without gibbs clean, this is redundant
                 new_score = log_likelihoods
                 new_cluster_graph = try_new_cluster_graph
 
@@ -167,7 +149,6 @@ def structure_fit(data_graph: nx.DiGraph, params: Parameters, cluster_graph: Clu
     return current_probab, cluster_graph, best_graph_log_likelihoods, best_graphs
 
 
-
 def simplify_graph(data_graph: nx.DiGraph, params: Parameters):
     # remove:
     # 1. dangling cluster nodes: any node that's not an object node but has 0-1 cluster neighbors, no
@@ -177,68 +158,6 @@ def simplify_graph(data_graph: nx.DiGraph, params: Parameters):
     # TODO: why cont = ones(1, 3)?
     # TODO: need call to combine_graphs, redundant_inds
     pass
-
-
-def branch_length_cases(data_graph: nx.DiGraph, params: Parameters, cluster_graph: ClusterGraph,
-                        best_graph_log_likelihoods: List[float], best_cluster_graphs: List[Any]) -> Tuple[float, nx.DiGraph, List[float], List[nx.DiGraph], Parameters]:
-    '''
-    deal with different approaches to branchlengths at current speed
-    :param data_graph:
-    :param params:
-    :param cluster_graph:
-    :param best_graph_log_likelihoods:
-    :param best_cluster_graphs:
-    :return:
-    log_likelihood:
-    graph:
-    best_graph_log_probs:
-    best_graph:
-    params:
-    '''
-    log_likelihood = float('inf')
-    print(params.init)
-    if params.init is None:
-        log_likelihood, cluster_graph, best_graph_log_likelihoods, best_cluster_graphs = structure_fit(data_graph, params, cluster_graph)
-
-    elif params.init == 'ext':
-        params.fixed_external = True
-        log_likelihood, cluster_graph, best_graph_log_probs_1, best_graph_1 = structure_fit(data_graph, params, cluster_graph)
-
-        print('untie external...')
-        params.fixed_external = False
-        log_likelihood, cluster_graph, best_graph_log_probs_2_5, best_graph_2_5 = structure_fit(data_graph, params, cluster_graph)
-
-        best_graph_log_likelihoods = [best_graph_log_probs_1, best_graph_log_probs_2_5]
-        best_cluster_graphs = [best_graph_1, best_graph_2_5]
-
-    elif params.init == 'int':
-        params.fixed_internal = True
-        log_likelihood, cluster_graph, best_graph_log_probs_1, best_graph_1 = structure_fit(data_graph, params, cluster_graph)
-
-        print('untie internal...')
-        params.fixed_external = False
-        log_likelihood, cluster_graph, best_graph_log_probs_2_5, best_graph_2_5 = structure_fit(data_graph, params, cluster_graph)
-
-        best_graph_log_likelihoods = [best_graph_log_probs_1, best_graph_log_probs_2_5]
-        best_cluster_graphs = [best_graph_1, best_graph_2_5]
-
-    elif params.init == 'intext':
-        params.fixed_internal = True
-        params.fixed_external = True
-        log_likelihood, cluster_graph, best_graph_log_probs_1, best_graph_1 = structure_fit(data_graph, params, cluster_graph)
-
-        print('untie internal...')
-        params.fixed_internal = False
-        log_likelihood, cluster_graph, best_graph_log_probs_2, best_graph_2 = structure_fit(data_graph, params, cluster_graph)
-
-        print('untie external...')
-        params.fixed_external = False
-        log_likelihood, cluster_graph, best_graph_log_probs_3_5, best_graph_3_5 = structure_fit(data_graph, params, cluster_graph)
-
-        best_graph_log_likelihoods = [best_graph_log_probs_1, best_graph_log_probs_2, best_graph_log_probs_3_5]
-        best_cluster_graphs = [best_graph_1, best_graph_2, best_graph_3_5]
-
-    return log_likelihood, cluster_graph, best_graph_log_likelihoods, best_cluster_graphs, params
 
 
 def run_model(struct_index: int, data_index: int) -> \
@@ -272,11 +191,9 @@ def run_model(struct_index: int, data_index: int) -> \
     params = Parameters()
     params.set_runtime_parameters(data_graph=data_graph, struct_name=cluster_graph.struct_type)
 
-    log_likelihoods, cluster_graph, best_graph_log_likelihoods, best_cluster_graphs, params = branch_length_cases(
-        data_graph=data_graph, params=params, cluster_graph=cluster_graph, best_graph_log_likelihoods=[],
+    return structure_fit( data_graph=data_graph, params=params, cluster_graph=cluster_graph, best_graph_log_likelihoods=[],
         best_cluster_graphs=[])
 
-    return log_likelihoods, cluster_graph, best_graph_log_likelihoods, best_cluster_graphs
 
 def main():
     run_model(0, 0)
