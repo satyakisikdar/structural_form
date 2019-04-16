@@ -46,7 +46,7 @@ def choose_node_split(cnode: int, cluster_graph: ClusterGraph, params: Parameter
         part_1 = {cnode}
         part_2 = set()
     else:
-        seedpairs = choose_seedpairs() # AAA
+        seedpairs = choose_seedpairs()
         _, log_likelihood, part_1, part_2 = cluster_graph.get_best_split(cnode, params)
 
     return log_likelihood, part_1, part_2
@@ -114,13 +114,6 @@ def structure_fit(data_graph: nx.DiGraph, params: Parameters, cluster_graph: Clu
             new_score = calculate_log_posterior(new_cluster_graph, data_graph, params)
             try_new_cluster_graph, try_log_likelihood, _, _ = try_new_cluster_graph.get_best_split(depth, params)
 
-            # go through, see what's redundant and not. get rid of flags change
-            # then recompute
-            # brlencases. feel free to burn
-            # we don't touch any flags in the likelihood
-            # stretch goal: look at choose seedpairs, implemen=
-            # on thursday: go through simplify_graph.m
-
             if try_log_likelihood > new_score: # without gibbs clean, this is redundant
                 new_score = log_likelihoods
                 new_cluster_graph = try_new_cluster_graph
@@ -141,14 +134,6 @@ def structure_fit(data_graph: nx.DiGraph, params: Parameters, cluster_graph: Clu
 
             depth += 1
     return current_probab, cluster_graph, best_graph_log_likelihoods, best_graphs
-
-
-def simplify_graph(data_graph: nx.DiGraph, params: Parameters):
-    # remove:
-    # 1. dangling cluster nodes: any node that's not an object node but has 0-1 cluster neighbors, no
-    #    object neighbors
-    # 2. any cluster node with exactly two neighbors, one of which is a cluster node
-    pass
 
 
 def run_model(struct_index: int, data_index: int) -> \

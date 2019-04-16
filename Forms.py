@@ -23,7 +23,6 @@ class ClusterGraph(nx.DiGraph):
         self.sigma = sigma
         self.number_empty_nodes = 0  # empty nodes for the tree
         self.num_objects = 0
-        self.cluster_labels = dict()
         # self.params = params
         # self.params.set_runtime_parameters(data_graph=data_graph, struct_name=self.struct_type)
         self.cluster_labels = dict()   # cluster assignments, maps nodes to clusters
@@ -263,6 +262,37 @@ class ClusterGraph(nx.DiGraph):
         else:
             raise NotImplementedError(f'Structure {self.struct_type} not yet implemented')
 
+    def simplify_graph(self, params: Parameters):
+        ''' removes nodes if they meet the one of the following:
+         remove:
+         1. dangling cluster nodes: not an object node but has 0-1 cluster neighbors
+         2. any cluster node with exactly two neighbors, one of which is a cluster node
+        '''
+        # notes: for trees only, there is a third check, not currently implemented
+        # also under case 2, there's a tree subcase, not currently implemented
+        check_dangling_nodes = True
+        check_empty_nodes = True
+
+        while check_dangling_nodes or check_empty_nodes:
+            # dangling nodes: unoccupied node with 0 or 1
+            remove_nodes = set()
+            for node in cluster_graph.nodes:
+                if len(cluster_graph[node]) == 0 and cluster_graph.adj[node] <= 2:
+                    remove_nodes.add(node)
+
+            if len(remove_nodes) == 0:
+                check_dangling_nodes = False
+            cluster_graph.remove_nodes_from(remove_nodes)
+
+            # empty nodes
+            remove_nodes = set()
+            for node in cluster_graph.nodes:
+                if len(cluster_graph[node]) == 0 and cluster_graph.adj[node] == 2:
+                    remove_nodes.add(node)
+
+            if len(remove_nodes) == 0:
+                check_empty_nodes = False
+            cluster_graph.remove_nodes_from(remove_nodes)
 
 
 def main():
