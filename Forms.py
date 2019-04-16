@@ -1,4 +1,6 @@
 import networkx as nx
+import random
+
 from typing import List, Tuple, Set, Any
 from copy import deepcopy
 from itertools import permutations, combinations
@@ -72,14 +74,23 @@ class ClusterGraph(nx.DiGraph):
         # self.update_clustering([cnode])
 
 
-    def get_seed_pairs(self, cnode: int) -> List[Tuple[Any, ...]]:
+    def get_seed_pairs(self, cnode: int, params: Parameters) -> List[Tuple[Any, ...]]:
         assert self.has_node(cnode)
         members = self.node[cnode]['members']
-        # if undirected, (a, b) and (b, a) are the same
-        if self.is_directed():
-            seed_pairs = list(permutations(members, 2))
-        else:
+        # if small enough, try all possiblec combinations
+        if len(members) < 5:
             seed_pairs = list(combinations(members, 2))
+        else:
+            seed_pairs = []
+            for member in members:
+                pair = random.choice([m for m in members if m != member])
+                seed_pairs.append((member, pair))
+
+        if cnode < 0  or params.struct_name != 'partition' and self.num_objects > 1:
+            pairs = deepcopy(seed_pairs)
+            for a, b in pairs:
+                seed_pairs.append((b, a))
+
         return seed_pairs
 
 
@@ -94,10 +105,9 @@ class ClusterGraph(nx.DiGraph):
         members = self.node[parent_node]['members']
         print(f'Splitting cluster node {parent_node} ({members})')
 
-        seed_pairs = self.get_seed_pairs(parent_node)
-        # seed_pairs = [(1, 2), (3, 1), (2, 1)]#, (1, 3), (4, 1)]
-        # seed_pairs = [(6, 1)]
-        cluster_graphs_likelihoods_and_partitions = []  # list of 3-tuples - (cluster_graph, likelihood, parts)
+        seed_pairs = self.get_seed_pairs(parent_node, params)
+        # list of 3-tuples - (cluster_graph, likelihood, parts)
+        cluster_graphs_likelihoods_and_partitions = []
 
 
         for seed_1, seed_2 in seed_pairs:  # try each seed pair
@@ -173,6 +183,7 @@ class ClusterGraph(nx.DiGraph):
         # we have multiple cluster_graphs and likelihoods
 
         # TODO: figure out simplify_graph in descending order of log_likelihood
+
 
         best_cluster_graph, best_likelihood, best_parts = max(cluster_graphs_likelihoods_and_partitions, key=lambda x: x[1])
         best_part_1, best_part_2 = best_parts

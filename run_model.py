@@ -2,7 +2,6 @@
 MATLAB file: runmodel.m
 '''
 import os
-import random
 
 import networkx as nx
 import numpy as np
@@ -47,6 +46,7 @@ def choose_node_split(cnode: int, cluster_graph: ClusterGraph, params: Parameter
         part_1 = {cnode}
         part_2 = set()
     else:
+        seedpairs = choose_seedpairs() # AAA
         _, log_likelihood, part_1, part_2 = cluster_graph.get_best_split(cnode, params)
 
     return log_likelihood, part_1, part_2
@@ -141,29 +141,6 @@ def structure_fit(data_graph: nx.DiGraph, params: Parameters, cluster_graph: Clu
 
             depth += 1
     return current_probab, cluster_graph, best_graph_log_likelihoods, best_graphs
-
-
-def choose_seedpairs(cluster_graph: ClusterGraph, comp_index: int, params: Parameters):
-    data_in_cluster = cluster_graph.cluster_labels[-1]
-    # partmembers: all data nodes in that cluster
-
-    if len(data_in_cluster) < 5: # small enough to try all possible combinations
-        seed_pairs = list(itertools.combinations(data_in_cluster, 2))
-    else:
-        # for each partmember (data node in cluster)
-        #   find which data nodes are part of that cluster label
-        seed_pairs = []
-        for data in data_in_cluster:
-            pair = random.choice([d for d in data_in_cluster if d != data])
-            seed_pairs.append((data, pair))
-
-    if comp_index < 0 or parameters.struct_name != 'partition' and self.num_objects > 1:
-        # try both difrections
-        pairs = seed_pairs
-        for a, b in pairs:
-            seed_pairs.append((b, a))
-
-    return seed_pairs
 
 
 def simplify_graph(data_graph: nx.DiGraph, params: Parameters):
