@@ -2,8 +2,11 @@
 MATLAB file: runmodel.m
 '''
 import os
+import random
+
 import networkx as nx
 import numpy as np
+
 from copy import deepcopy
 from typing import Tuple, List, Set, Any
 
@@ -23,7 +26,7 @@ class Record:
         self.cluster_graph = cluster_graph
 
 
-def calculate_log_likelihood(cluster_graph: ClusterGraph, data_graph: nx.DiGraph, params: Parameters) -> Tuple[float, ClusterGraph]:
+def calculate_log_posterior(cluster_graph: ClusterGraph, data_graph: nx.DiGraph, params: Parameters) -> float:
     '''
     :param cluster_graph:
     :param data_graph:
@@ -32,7 +35,7 @@ def calculate_log_likelihood(cluster_graph: ClusterGraph, data_graph: nx.DiGraph
     '''
     log_likelihood, cluster_graph = graph_likelihood(data_graph, cluster_graph, params)
     log_likelihood += graph_prior(cluster_graph, params)
-    return log_likelihood, cluster_graph
+    return log_likelihood
 
 
 def choose_node_split(cnode: int, cluster_graph: ClusterGraph, params: Parameters) -> Tuple[float, Set[int], Set[int]]:
@@ -49,15 +52,6 @@ def choose_node_split(cnode: int, cluster_graph: ClusterGraph, params: Parameter
     return log_likelihood, part_1, part_2
 
 
-def optimize_depth(cluster_graph: ClusterGraph, depth: int, log_likelihoods: float, new_cluster_graph: nx.DiGraph,
-                   data_graph: nx.DiGraph, params: Parameters) -> None:
-     for cnode in cluster_graph.nodes():
-         if new_cluster_graph.number_of_nodes() == 0:
-             continue
-         log_likelihoods, new_cluster_graph = calculate_log_likelihood(new_cluster_graph, data_graph, params)
-     return log_likelihoods, new_cluster_graph
-
-
 def structure_fit(data_graph: nx.DiGraph, params: Parameters, cluster_graph: ClusterGraph) -> Tuple[float, ClusterGraph, List[float],
                                                                                             List[nx.DiGraph]]:
     # TODO first split matches... likelihood numbers are off for the second iteration and on  - data_graph subgraph is turned off..
@@ -66,7 +60,7 @@ def structure_fit(data_graph: nx.DiGraph, params: Parameters, cluster_graph: Clu
     best_graph_log_likelihoods = []
     best_graphs = []
 
-    current_probab, cluster_graph = calculate_log_likelihood(cluster_graph, data_graph, params)
+    current_probab = calculate_log_posterior(cluster_graph, data_graph, params)
 
     stop_flag = False
     depth = 0
@@ -109,7 +103,7 @@ def structure_fit(data_graph: nx.DiGraph, params: Parameters, cluster_graph: Clu
 
         if depth < 10 or new_score - current_probab <= loop_eps:
             print('small depth: optimizing branch lengths of best split')
-            new_score, new_cluster_graph = calculate_log_likelihood(new_cluster_graph, data_graph, params)
+            new_score = calculate_log_posterior(new_cluster_graph, data_graph, params)
 
         if new_score - current_probab <= loop_eps:
             print('do slow gibbs clean - NOT IMPLEMENTED yet')
@@ -117,7 +111,7 @@ def structure_fit(data_graph: nx.DiGraph, params: Parameters, cluster_graph: Clu
 
             # optimize all splits at this depth
             print('optimize all splits at current depth')
-            new_score, new_cluster_graph = calculate_log_likelihood(new_cluster_graph, data_graph, params)
+            new_score = calculate_log_posterior(new_cluster_graph, data_graph, params)
             try_new_cluster_graph, try_log_likelihood, _, _ = try_new_cluster_graph.get_best_split(depth, params)
 
             # go through, see what's redundant and not. get rid of flags change
@@ -149,14 +143,34 @@ def structure_fit(data_graph: nx.DiGraph, params: Parameters, cluster_graph: Clu
     return current_probab, cluster_graph, best_graph_log_likelihoods, best_graphs
 
 
+def choose_seedpairs(cluster_graph: ClusterGraph, comp_index: int, params: Parameters):
+    data_in_cluster = cluster_graph.cluster_labels[-1]
+    # partmembers: all data nodes in that cluster
+
+    if len(data_in_cluster) < 5: # small enough to try all possible combinations
+        seed_pairs = list(itertools.combinations(data_in_cluster, 2))
+    else:
+        # for each partmember (data node in cluster)
+        #   find which data nodes are part of that cluster label
+        seed_pairs = []
+        for data in data_in_cluster:
+            pair = random.choice([d for d in data_in_cluster if d != data])
+            seed_pairs.append((data, pair))
+
+    if comp_index < 0 or parameters.struct_name != 'partition' and self.num_objects > 1:
+        # try both difrections
+        pairs = seed_pairs
+        for a, b in pairs:
+            seed_pairs.append((b, a))
+
+    return seed_pairs
+
+
 def simplify_graph(data_graph: nx.DiGraph, params: Parameters):
     # remove:
     # 1. dangling cluster nodes: any node that's not an object node but has 0-1 cluster neighbors, no
     #    object neighbors
     # 2. any cluster node with exactly two neighbors, one of which is a cluster node
-
-    # TODO: why cont = ones(1, 3)?
-    # TODO: need call to combine_graphs, redundant_inds
     pass
 
 
@@ -191,8 +205,7 @@ def run_model(struct_index: int, data_index: int) -> \
     params = Parameters()
     params.set_runtime_parameters(data_graph=data_graph, struct_name=cluster_graph.struct_type)
 
-    return structure_fit( data_graph=data_graph, params=params, cluster_graph=cluster_graph, best_graph_log_likelihoods=[],
-        best_cluster_graphs=[])
+    return structure_fit(data_graph, params, cluster_graph)
 
 
 def main():
