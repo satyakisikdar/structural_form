@@ -182,9 +182,14 @@ class ClusterGraph(nx.DiGraph):
         # we have multiple cluster_graphs and likelihoods
 
         # TODO: figure out simplify_graph in descending order of log_likelihood
+        for cluster_graph, _, _ in sorted(cluster_graphs_likelihoods_and_partitions, key=lambda x: x[1], reverse=True):
+            simplify_graph(cluster_graph)
+            if cluster_graph.order() > 1:  # if after simplifying it has > 1 clusters, break
+                break
 
-
-        best_cluster_graph, best_likelihood, best_parts = max(cluster_graphs_likelihoods_and_partitions, key=lambda x: x[1])
+        best_cluster_graph, best_likelihood, best_parts = max(filter(lambda x: x[0].order() > 1,  # only consider cluster_graphs with > 1 clusters
+                                                                     cluster_graphs_likelihoods_and_partitions),
+                                                              key=lambda x: x[1])  # pick the one with the best likelihood
         best_part_1, best_part_2 = best_parts
         print(f'best parts: {best_part_1, best_part_2}, likelihood: {best_likelihood}\n')
 
@@ -262,37 +267,40 @@ class ClusterGraph(nx.DiGraph):
         else:
             raise NotImplementedError(f'Structure {self.struct_type} not yet implemented')
 
-    def simplify_graph(self, params: Parameters):
-        ''' removes nodes if they meet the one of the following:
-         remove:
-         1. dangling cluster nodes: not an object node but has 0-1 cluster neighbors
-         2. any cluster node with exactly two neighbors, one of which is a cluster node
-        '''
-        # notes: for trees only, there is a third check, not currently implemented
-        # also under case 2, there's a tree subcase, not currently implemented
-        check_dangling_nodes = True
-        check_empty_nodes = True
 
-        while check_dangling_nodes or check_empty_nodes:
-            # dangling nodes: unoccupied node with 0 or 1
-            remove_nodes = set()
-            for node in cluster_graph.nodes:
-                if len(cluster_graph[node]) == 0 and cluster_graph.adj[node] <= 2:
-                    remove_nodes.add(node)
+def simplify_graph(cluster_graph: ClusterGraph) -> None:
+    ''' removes nodes if they meet the one of the following:
+     remove:
+     1. dangling cluster nodes: not an object node but has 0-1 cluster neighbors
+     2. any cluster node with exactly two neighbors, one of which is a cluster node
+    '''
+    # notes: for trees only, there is a third check, not currently implemented
+    # also under case 2, there's a tree subcase, not currently implemented
+    check_dangling_and_empty_nodes = True
+    # check_empty_nodes = True
 
-            if len(remove_nodes) == 0:
-                check_dangling_nodes = False
-            cluster_graph.remove_nodes_from(remove_nodes)
+    while check_dangling_and_empty_nodes:  # or check_empty_nodes:
+        # dangling nodes: unoccupied node with 0 or 1
+        remove_nodes = set()
+        for node in cluster_graph.nodes():
+            if len(cluster_graph.node[node]['members']) == 0 and len(cluster_graph.neighbors(node)) <= 2:  # TODO: this covers both cases
+                remove_nodes.add(node)
 
-            # empty nodes
-            remove_nodes = set()
-            for node in cluster_graph.nodes:
-                if len(cluster_graph[node]) == 0 and cluster_graph.adj[node] == 2:
-                    remove_nodes.add(node)
+        if len(remove_nodes) == 0:
+            check_dangling_and_empty_nodes = False
 
-            if len(remove_nodes) == 0:
-                check_empty_nodes = False
-            cluster_graph.remove_nodes_from(remove_nodes)
+        for node in remove_nodes:
+            cluster_graph.remove_node(node)
+    return
+        # # empty nodes
+        # remove_nodes = set()
+        # for node in cluster_graph.nodes():
+        #     if len(cluster_graph[node]['members']) == 0 and len(cluster_graph.adj[node]) == 2:
+        #         remove_nodes.add(node)
+        #
+        # if len(remove_nodes) == 0:
+        #     check_empty_nodes = False
+        # cluster_graph.remove_nodes_from(remove_nodes)
 
 
 def main():
