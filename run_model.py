@@ -37,21 +37,6 @@ def calculate_log_posterior(cluster_graph: ClusterGraph, data_graph: nx.DiGraph,
     return log_likelihood
 
 
-def choose_node_split(cnode: int, cluster_graph: ClusterGraph, params: Parameters) -> Tuple[float, Set[int], Set[int]]:
-    partition_members = cluster_graph.node[cnode]['members']
-    print(f'Splitting cluster id {cnode}')
-
-    if len(partition_members) == 1:
-        log_likelihood = np.float('-inf')
-        part_1 = {cnode}
-        part_2 = set()
-    else:
-        seedpairs = choose_seedpairs()
-        _, log_likelihood, part_1, part_2 = cluster_graph.get_best_split(cnode, params)
-
-    return log_likelihood, part_1, part_2
-
-
 def structure_fit(data_graph: nx.DiGraph, params: Parameters, cluster_graph: ClusterGraph) -> Tuple[float, ClusterGraph, List[float],
                                                                                             List[nx.DiGraph]]:
     # TODO first split matches... likelihood numbers are off for the second iteration and on  - data_graph subgraph is turned off..
@@ -115,7 +100,7 @@ def structure_fit(data_graph: nx.DiGraph, params: Parameters, cluster_graph: Clu
             try_new_cluster_graph, try_log_likelihood, _, _ = try_new_cluster_graph.get_best_split(depth, params)
 
             if try_log_likelihood > new_score: # without gibbs clean, this is redundant
-                new_score = log_likelihoods
+                new_score = try_log_likelihood
                 new_cluster_graph = try_new_cluster_graph
 
         if new_score - current_probab <= loop_eps:
@@ -162,7 +147,7 @@ def run_model(struct_index: int, data_index: int) -> \
 
     # read data_graph from file
     # data_graph = nx.DiGraph()
-    cluster_graph = ClusterGraph(struct_type='chain', dataset='test', data_graph=data_graph)
+    cluster_graph = ClusterGraph(struct_type='ring', dataset='test', data_graph=data_graph)
 
     params = Parameters()
     params.set_runtime_parameters(data_graph=data_graph, struct_name=cluster_graph.struct_type)
@@ -171,7 +156,8 @@ def run_model(struct_index: int, data_index: int) -> \
 
 
 def main():
-    run_model(0, 0)
+    stuff = run_model(0, 0)
+    print(stuff)
     # data_g = nx.Graph()
     # # data_g.add_edges_from([(1, 2), (1, 3), (2, 3), (4, 5), (4, 6), (5, 6), (7, 8), (7, 9), (8, 9), (10, 11), (10, 12),
     # #                         (11, 12), (3, 5), (6, 8), (9, 11)])
