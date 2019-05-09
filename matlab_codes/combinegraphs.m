@@ -133,7 +133,7 @@ fullW(nobj+1:end, nobj+1:end)=graph.Wcluster;
 graph.W = fullW;        
 graph.adj = fullW>0;    % since we deal with bin rel data, same as W
 graph.adjsym = (graph.adj | graph.adj'); % make symmetric
-7
+
 % make W symmetric in a very verbose way
 graph.Wsym = fullW;
 Wtr = fullW';

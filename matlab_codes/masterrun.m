@@ -45,7 +45,7 @@ ps.data	      = {'demo_chain_feat', 'demo_ring_feat',...
                  'mangabeys','bushcabinet', 'kularing',...
                  'prisoners'}; % temporarily replace prisoners with test_data
 
-thisstruct = [1];	% chain and ring, 2,4
+thisstruct = [2];	% chain and ring, 2,4
 % Datasets for this run. Indices correspond to dataset names in  setpsexport() 
 thisdata = [20];  % demo chain feat
 

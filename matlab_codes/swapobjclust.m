@@ -1,6 +1,6 @@
 function [graph currscore overallchange nearmscores nearmgraphs] = ...
 	    swapobjclust(graph, data, ps, comp, epsilon, currscore, ...
-		 overallchange, loopmax, nearmscores, nearmgraphs, varargin); 
+		 overallchange, loopmax, nearmscores, nearmgraphs, varargin) 
 
 % Try improving GRAPH by swapping clusters or individual objects
 
@@ -30,10 +30,14 @@ while (change && loopcount < loopmax)
     disp('loopcount exceeded in gibbs_clean: swapobjclust');
   end
   [sw1 sw2]= chooseswaps(graph, whole, objflag, comp, fastflag, graphngb);
+  sw1
+  sw2
   rp = randperm(size(sw1,1));
   for jind=1:length(rp)
     j = rp(jind);
-    if j > size(sw1,1) continue; end
+    if j > size(sw1,1)
+        continue;
+    end
     testgraph = doswap(graph, sw1(j,:), sw2(j,:), objflag, ps); 
     testgraph = simplify_graph(testgraph, ps);
     [testscore, newgraph]=graph_like(data, testgraph, ps);
@@ -47,6 +51,7 @@ while (change && loopcount < loopmax)
       change = 1; overallchange = 1;
       graph = testgraph; currscore = testscore;
       [sw1 sw2]= chooseswaps(graph, whole, objflag, comp, fastflag, graphngb);
+      
     elseif nmissflag % add graph to list of nearmisses
       if testscore > nearmscores(end)
 	[nearmscores nearmgraphs]=addnearmiss(nearmscores, nearmgraphs,...
@@ -66,16 +71,17 @@ end
 %
 
 function [sw1 sw2]= chooseswaps(graph, whole, oflag, comp, fastflag, graphngb)
-
 if oflag
   nnode = size(graph.adjcluster, 1);
   % cluster nodes that are free to accept objects
   clegal = setdiff(1:nnode, graph.illegal); 
-  clegalv = zeros(1,nnode); clegalv(clegal) = 1;
+  clegalv = zeros(1,nnode);
+  clegalv(clegal) = 1;
   % objects that are free to move
   objmovable = sourceobjs(graph);
-  objmovablev= zeros(1,graph.objcount); objmovablev(objmovable) = 1;
-  if fastflag
+  objmovablev= zeros(1,graph.objcount);
+  objmovablev(objmovable) = 1;
+  if fastflag % comment: ignore fastflag
     dijk = dijkstra(graph.adjclustersym);
     col1 = []; col2 = [];
     for c=unique(graph.z)
@@ -100,17 +106,20 @@ elseif whole
   clegalv = zeros(1,nnode); clegalv(clegal) = 1;
   % cluster nodes whose objects we can steal 
   csource = sourcecls(graph);
-  csourcev= zeros(1,nnode); csourcev(csource) = 1;
+  csourcev= zeros(1,nnode);
+  csourcev(csource) = 1;
   if fastflag
     dijk = dijkstra(graph.adjclustersym);
     col1 = []; col2 = []; col1a= []; col2a = [];
     for c = csource
       ds = find(dijk(c,:) <= graphngb & dijk(c,:) > 0 & clegalv);
-      col1 = [col1; c*ones(length(ds),1)]; col2 = [col2; ds']; 
+      col1 = [col1; c*ones(length(ds),1)];
+      col2 = [col2; ds']; 
       swopts = find(dijk(c,:) <= graphngb & dijk(c,:) > 0 & csourcev);
-      % don't want to try swaps twice
+      % don't want to try swaps twice, REDUNDANT BC clegalv == csourcev
       swopts = swopts(swopts > c);
-      col1a = [col1a; c*ones(length(swopts),1)]; col2a = [col2a; swopts'];
+      col1a = [col1a; c*ones(length(swopts),1)];
+      col2a = [col2a; swopts'];
     end
     sw1 = [nan*ones(length(col1), 1), col1, graph.compinds(col2,:)];
     sw2 = nan*ones(size(sw1));
@@ -129,23 +138,31 @@ elseif whole
     sw2 = [sw2;nan*ones(size(col1)), col2,  graph.compinds(col1,:)];
   end
 else % within component moves/swaps
-  % cluster nodes that are free to accept objects
+  % cluster nodes that are free to accept data -cat
+  % celgalv: 1 for nodes that can accept data, 0 otherwise
   clegal = setdiff(1:graph.components{comp}.nodecount,...
 		 graph.components{comp}.illegal);
-  clegalv = zeros(1,graph.components{comp}.nodecount); clegalv(clegal) = 1;
-  % cluster nodes whose objects we can steal 
+  clegalv = zeros(1,graph.components{comp}.nodecount);
+  clegalv(clegal) = 1;
+  
+  % cluster nodes whose data can be moved -cat
+  % sourcecls: except for special cases, just finds unique cluster nodes
+  % so in most cases, csourcemove == scourceswap
   csourcemove = sourcecls(graph, comp);
   csourcemovev= zeros(1,graph.components{comp}.nodecount);
   csourcemovev(csourcemove) = 1;
+  
   csourceswap = unique(graph.components{comp}.z);
   csourceswapv= zeros(1,graph.components{comp}.nodecount);
   csourceswapv(csourceswap) = 1;
+  fastflag = 0
   if fastflag
     dijk = dijkstra(graph.components{comp}.adjsym);
     col1 = []; col2 = []; 
     for c = csourcemove
       ds = find(dijk(c,:) <= graphngb & dijk(c,:) > 0 & clegalv);
-      col1 = [col1; c*ones(length(ds),1)]; col2 = [col2; ds']; 
+      col1 = [col1; c*ones(length(ds),1)];
+      col2 = [col2; ds']; 
     end
     sw1 =[comp*ones(length(col1),1),col1,nan*ones(length(col1), graph.ncomp)];
     if isempty(sw1) 
@@ -165,7 +182,8 @@ else % within component moves/swaps
     sw1b =[comp*ones(length(col1),1),col1,nan*ones(length(col1), graph.ncomp)];
     sw2b =[comp*ones(length(col1),1),col2,nan*ones(length(col1), graph.ncomp)];
     if isempty(sw1b) 
-      sw1b = zeros(0, graph.ncomp+2); sw2b = sw1b;
+      sw1b = zeros(0, graph.ncomp+2);
+      sw2b = sw1b;
     else
       sw1b(:, 2+comp) = col2; 
       sw2b(:, 2+comp) = col1; 
@@ -202,8 +220,7 @@ end
 %	format: [c, j, z1, z2, z3, ..., zn]
 %	sw2   : may contain infs (for rows that are moves)   
        
-function graph = doswap(graph, sw1, sw2, oflag, ps); 
-
+function graph = doswap(graph, sw1, sw2, oflag, ps)
 if oflag		    % object move
   obj = sw1(2);
   for i=1:graph.ncomp
@@ -219,7 +236,8 @@ elseif ~isnan(sw1(1))	    % within component move/swap
   end
   graph.components{c}.z = newz;
 else			    % move/swap at highest level
-  cl = sw1(2); oldz = graph.z; 
+  cl = sw1(2);
+  oldz = graph.z; 
   clmembers = find(oldz == cl);
   for i=1:graph.ncomp
     graph.components{i}.z(clmembers) = sw1(2+i);

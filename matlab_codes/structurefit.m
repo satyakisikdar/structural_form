@@ -42,7 +42,7 @@ while (stopflag==0)
     end
   end
 
-  % for combinations: try moving objects to vacant neighbors
+  % for combinations: try moving objects  to vacant neighbors
   if graph.ncomp > 1
     i = graph.ncomp+1; lls{depth,i,1,1}= -inf; newgraph{depth,i,1,1} = [];
     nclusternodes = size(graph.adjcluster,1);
@@ -288,6 +288,3 @@ if graph.ncomp > 1
       end
   end
 end
-
-
-

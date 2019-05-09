@@ -23,7 +23,7 @@ for i=1:graph.ncomp
   while (sum(cont)) 
     for caseind = 1:3
       ntot = size(adj,1);
-      occ = zeros(1,ntot);
+      occ = zeros(1,ntot); % occupied: aka there are data assigned to the clusters
       occ(z) = 1;
       [adj W z includeind] = redundantinds(caseind, graph, i, adj, W, z, ...
 					   occ, ps);
@@ -73,7 +73,8 @@ switch caseind
   case{1}
     % dangling cluster nodes (any unoccupied node with zero or exactly one
     %	cluster neighbor 
-    removeind = find(sum(adj)+sum(adj')<=1 & occ == 0);
+    removeind = find(sum(adj)+sum(adj')<=1 & occ == 0); % bidirectional will be == 2
+    % discovers any empty nodes that are only connected to by 0-1 cluster neighbors
   case{2}
     % any unoccupied node with exactly two neighbors 
     % (but don't remove root of tree
