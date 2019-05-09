@@ -1,0 +1,154 @@
+#!/usr/bin/env python
+
+def gibbs_clean(...):
+    first, parse arguments
+
+    llgold = log_posterior of simplified original graph
+    llgraph = original graph
+
+
+    currscore = llgold
+    while theres some significant change and we havent looped loopmax times:
+        if cluster_swap flag set and theres >1 nodes:
+            swapobjclust(...) # by default, swaps entire clusters
+            if this improves log likelihood:
+                set currscore and graph
+                return
+
+        if subtree_prune flag set and > 1 nodes:
+            spr()
+            if this improves log likelihood:
+                set currscore and graph
+                return
+
+        if entire_graph_swap flag set and > 1 nodes:
+            swapobjclust() # "comp" empty (whole=1)
+            if this improves log likelihood:
+                set currscore and graph
+                return
+
+        if object_swap flag set:
+            swapobjclust() # objflag set to 1, "comp" empty (whole=1)
+
+        # for all of these, also added to nearmisses if the graph doesn't quite make the cut
+        # these will get simplified, and then we try to see if they're better than curr graph
+        for miss_graph in nearmisses:
+            miss_graph = nearmissops(miss_graph)
+            if log_posterior(miss_graph) - currscore > epsilon:
+                graph = miss_graph
+                currscore = log_posterior(miss_graph)
+                break
+
+
+def nearmissopts(...):
+    # find k best nearmissgraphs that are, ideally, not isomorphic
+    if nauty installed:
+        near_miss_graphs = find_nonisomorphic_graphs_with_nauty(near_miss_graphs)
+    sort(near_miss_graphs, key=log_posteriors, reverse=True)
+    return near_miss_graphs[:k]
+
+
+def objmoveclust(cluster_graph, ..., graphngb):
+    col1 = []
+    col2 = []
+    if moving_objects_flag:
+        if not fastflag:
+            data = itertools.product(all_data_nodes, all_cluster_nodes)
+            sw1 = [(None, d, c) for d, c in data]
+            sw2 = size of sw1 but full of None
+            return sw1, sw2
+
+
+        shortest_paths = dijkstra(cluster_graph)
+        for cluster_node in cluster_graph:
+            movable_data = data indices where path exists and shortest_paths[cluster_node] <= graphngb
+            col1 += movable_data
+            col2 += cluster_node_label * len(movable_data)
+
+            Nonelist = [None] * len(col1)
+            sw1 = [Nonelist, col1, col2]
+            sw2 = [Nonelist, Nonelist, Nonelist]
+        return sw1, sw2
+
+    if whole_flag:
+        if not fastflag:
+            col1 = cluster_node_labels * len(cluster_node_labels)
+            data = itertools.permutations(cluster_nodes, 2)
+            sw1 = [(None, c1, c2) for c1, c2 in data]
+            sw2 = None same size as sw1
+
+            data = itertools.combinations(cluster_nodes, 2)
+            sw1 += [(None, c1, c2) for c1, c2 in data]
+            sw2 += [(None, c2, c1) for c1, c2 in data]
+
+            return sw1, sw2
+
+        for cluster_node in cluster_graph:
+            movable_clusters = cluster indices where path exists and shortest_paths[cluster_node] <= graphngb
+
+            col1 += [1] * len(movable_clusters)
+            col2 += movable_clusters
+
+        Nonelist = [None] * len(col1)
+        sw1 = [Nonelist, col1, col2]
+        sw2 = [Nonelist, col2, col1]
+        return sw1, sw2
+
+    if within_component_flag:
+        if not fastflag:
+            data = itertools.permutations(cluster_nodes, 2)
+            sw1 = [(1, c1, c2) for c1, c2 in data]
+            sw2 = same size but None
+
+            clusters = itertools.combinations(cluster_nodes, 2)
+            sw1b = [(1, c1, c2) for c1, c2 in clusters]
+            sw1b = [(1, c1, c1) for c1, c2 in clusters]
+
+            sw1 += sw1b
+            sw2 += sw2b
+            return sw1, sw2
+
+        shortest_paths = dijkstra(cluster_graph)
+        for cluster_node in cluster_graph:
+            movable_clusters = clusters where path exists and shortest_paths[cluster_node] <= graphngb
+            col1 += movable_clusters
+            col2 += cluster_node_label * len(movable_clusters)
+
+        One_list = [1] * len(col1) # One_list because comp index is always one for our purposes
+        sw1 = [One_list, col1, col2]
+        sw2 = size of sw1 but full of None
+
+        col1 = []
+        col2 = []
+        for cluster_node in cluster_graph:
+            movable_clusters = clusters where path exists and shortest_paths[cluster_node] <= graphngb
+            movable_clusters = filter(lambda x: x > cluster_node_label, movable_clusters) # filter out  one direction of swaps
+            col1 += movable_clusters
+            col2 += cluster_node_label * len(movable_clusters)
+
+        One_list = [1] * len(col1) # One_list because comp index is always one for our purposes
+        sw1b = [One_list, col1, col2]
+        sw2b = [One_list, col2, col1]
+
+        sw1 += sw1b
+        sw2 += sw2b
+
+        return sw1, sw2
+
+
+def doswap(graph, sw1, sw2):
+    if moving_objects_flag:
+        obj = sw1[1]
+        cluster_graph_assignment[obj] = sw1[2]
+
+    elif whole_flag:
+        source = sw1[1]
+        target = sw2[1]
+        # move all data nodes from source cluster node to target cluster node
+
+
+    elif within_component_flag:
+        component, source_label, target_label = sw1
+        # move all data nodes from source cluster node to target cluster node
+
+    return combinegraphs(graph, ps, 'zonly', 1)
